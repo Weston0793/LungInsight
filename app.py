@@ -96,14 +96,20 @@ def overlay_hexagons(image, cam):
     # Find contours from the thresholded image
     contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     
-    # Sort contours by area in descending order and take the top 3
-    sorted_contours = sorted(contours, key=cv2.contourArea, reverse=True)[:3]
+    # Sort contours by area in descending order
+    sorted_contours = sorted(contours, key=cv2.contourArea, reverse=True)
     
     # Convert PIL image to numpy array
     image_np = np.array(image)
     
-    # Draw hexagons on the highest activation points
+    hexagons = []
+    total_activation_points = np.sum(cam_image > 200)
+    covered_activation_points = 0
+    
     for cnt in sorted_contours:
+        if covered_activation_points >= 0.3 * total_activation_points or len(hexagons) >= 3:
+            break
+        
         # Get the bounding box of the contour
         x, y, w, h = cv2.boundingRect(cnt)
         
@@ -117,11 +123,43 @@ def overlay_hexagons(image, cam):
             for theta in np.linspace(0, 2 * np.pi, 6, endpoint=False)
         ], np.int32)
         
-        # Draw the hexagon on the image
+        # Calculate the area of the current hexagon
+        mask = np.zeros_like(cam_image)
+        cv2.fillPoly(mask, [hexagon], 1)
+        hexagon_activation_points = np.sum(mask * (cam_image > 200))
+        
+        # Check for overlaps and merge if necessary
+        merge_required = False
+        for i, existing_hexagon in enumerate(hexagons):
+            existing_mask = np.zeros_like(cam_image)
+            cv2.fillPoly(existing_mask, [existing_hexagon], 1)
+            intersection = np.sum(mask * existing_mask)
+            
+            if intersection > 0:
+                # Merge the hexagons by taking the union of their contours
+                new_hexagon = cv2.convexHull(np.vstack([existing_hexagon, hexagon]))
+                hexagons[i] = new_hexagon
+                covered_activation_points += hexagon_activation_points
+                merge_required = True
+                break
+        
+        if not merge_required:
+            hexagons.append(hexagon)
+            covered_activation_points += hexagon_activation_points
+    
+    # Draw hexagons on the image
+    for hexagon in hexagons:
         cv2.polylines(image_np, [hexagon], isClosed=True, color=(255, 0, 0), thickness=2)
     
     # Convert numpy array back to PIL image
     return Image.fromarray(image_np)
+
+# Assuming 'image' and 'combined_cam' are already defined
+image_with_hexagons = overlay_hexagons(image, combined_cam)
+
+# Show the final images with streamlit
+st.image(image_with_hexagons, caption='Image with highlighted regions.', use_column_width=True)
+st.image(cam_overlay_image, caption='Stacked CAM overlay.', use_column_width=True)
 
 
 # Streamlit App
