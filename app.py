@@ -3,10 +3,9 @@ import torch
 import torchvision.transforms as transforms
 from PIL import Image
 import numpy as np
-import os
 from torchvision import models
 import torch.nn as nn
-import random
+import torch.nn.functional as F
 import cv2
 
 # Load Models
@@ -50,44 +49,33 @@ def apply_clahe(image):
     clahe_image = clahe.apply(np.array(image))
     return Image.fromarray(clahe_image)
 
-def get_cam(model, img_tensor, target_layer):
-    """
-    Generate a Class Activation Map (CAM) for a given image and model.
-    
-    Args:
-        model (nn.Module): The neural network model.
-        img_tensor (torch.Tensor): The input image tensor.
-        target_layer (str): The layer to target for CAM generation.
-        
-    Returns:
-        np.ndarray: The CAM mask.
-    """
+# Function to get CAM
+def get_cam(model, img_tensor, target_layer_name):
     model.eval()
     
     def forward_hook(module, input, output):
         activation[0] = output
-    
+
     activation = {}
-    layer = dict([*model.named_modules()]).get(target_layer, None)
+    layer = dict([*model.named_modules()]).get(target_layer_name, None)
     if layer is None:
-        raise ValueError(f"Layer {target_layer} not found in the model")
+        raise ValueError(f"Layer {target_layer_name} not found in the model")
         
     hook = layer.register_forward_hook(forward_hook)
     
     with torch.no_grad():
         output = model(img_tensor)
+        predicted_class = torch.argmax(output, dim=1).item()
     
     hook.remove()
     
-    output = output[0]
-    output = F.relu(output)
-    weight_softmax_params = list(model.parameters())[-2].data.numpy()
+    weight_softmax_params = list(model.parameters())[-2].detach().numpy()
     weight_softmax = np.squeeze(weight_softmax_params)
     
     activation = activation[0].squeeze().cpu().data.numpy()
     cam = np.zeros(activation.shape[1:], dtype=np.float32)
     
-    for i, w in enumerate(weight_softmax):
+    for i, w in enumerate(weight_softmax[predicted_class]):
         cam += w * activation[i, :, :]
     
     cam = np.maximum(cam, 0)
@@ -96,6 +84,8 @@ def get_cam(model, img_tensor, target_layer):
     cam = cam / np.max(cam)
     
     return cam
+
+# Function to overlay circles on the image
 def overlay_circles(image, cam):
     cam_image = np.uint8(255 * cam)
     _, thresh = cv2.threshold(cam_image, 127, 255, cv2.THRESH_BINARY)
@@ -159,8 +149,8 @@ if uploaded_file is not None:
     st.write(f"Confidence: **{confidence:.4f}**")
 
     # Generate CAMs and overlay circles
-    cam_v2 = get_cam(model_v2, image_tensor, target_layer=15)
-    cam_v3s = get_cam(model_v3s, image_tensor, target_layer=-1)
+    cam_v2 = get_cam(model_v2, image_tensor, target_layer_name='base_model.features.18.2')
+    cam_v3s = get_cam(model_v3s, image_tensor, target_layer_name='base_model.features.12')
     combined_cam = (cam_v2 + cam_v3s) / 2
 
     image_with_circles = overlay_circles(image, combined_cam)
