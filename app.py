@@ -43,6 +43,53 @@ model_v3s.load_state_dict(torch.load('bucket/MobileNetV3Small_1.pth', map_locati
 model_v2.eval()
 model_v3s.eval()
 
+# CLAHE function
+def apply_clahe(image):
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    clahe_image = clahe.apply(np.array(image))
+    return Image.fromarray(clahe_image)
+
+# Generate CAMs and overlay bounding circles
+def get_cam(model, image_tensor, target_layer):
+    model.eval()
+    with torch.no_grad():
+        outputs = model(image_tensor)
+        predicted_class = torch.argmax(outputs, dim=1).item()
+    
+    # Hook the target layer
+    activation = {}
+    def hook_fn(m, i, o):
+        activation[target_layer] = o.detach()
+    
+    target_layer_handle = model.base_model.features[target_layer].register_forward_hook(hook_fn)
+    
+    # Forward pass
+    model(image_tensor)
+    
+    target_layer_handle.remove()
+    
+    # Get the CAM
+    weights = model.base_model.classifier[-1].weight[predicted_class].unsqueeze(-1).unsqueeze(-1)
+    cam = (weights * activation[target_layer]).sum(dim=1).squeeze().cpu().numpy()
+    cam = np.maximum(cam, 0)
+    cam = cv2.resize(cam, (300, 300))
+    cam = cam - np.min(cam)
+    cam = cam / np.max(cam)
+    return cam
+
+def overlay_circles(image, cam):
+    cam_image = np.uint8(255 * cam)
+    _, thresh = cv2.threshold(cam_image, 127, 255, cv2.THRESH_BINARY)
+    contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    sorted_contours = sorted(contours, key=cv2.contourArea, reverse=True)[:4]
+    image_np = np.array(image)
+    for cnt in sorted_contours:
+        (x, y), radius = cv2.minEnclosingCircle(cnt)
+        center = (int(x), int(y))
+        radius = int(radius)
+        cv2.circle(image_np, center, radius, (255, 0, 0), 2)
+    return Image.fromarray(image_np)
+
 # Streamlit App
 st.title("Medical Image Classification")
 st.write("Upload an X-ray image and get the prediction with confidence levels.")
@@ -55,21 +102,15 @@ if uploaded_file is not None:
     st.write("")
     st.write("Classifying...")
 
+    image_clahe = apply_clahe(image)
+
     transform = transforms.Compose([
         transforms.Resize((300, 300)),
         transforms.ToTensor(),
         transforms.Normalize([0.5], [0.5])
     ])
 
-    # Data augmentation
-    aug_transform = transforms.Compose([
-        transforms.RandomAffine(degrees=5, translate=(0.05, 0.05), scale=(0.95, 1.05)),
-        transforms.RandomHorizontalFlip(),
-        transforms.RandomVerticalFlip(),
-        transforms.RandomInvert(p=0.5)
-    ])
-
-    image_tensor = transform(image).unsqueeze(0).to(device)
+    image_tensor = transform(image_clahe).unsqueeze(0).to(device)
 
     class_labels = ['Normal', 'TBC', 'Bacteria', 'Virus', 'COVID']
     
@@ -77,11 +118,9 @@ if uploaded_file is not None:
     predictions_v3s = []
 
     for _ in range(20):
-        augmented_image = aug_transform(image_tensor).to(device)
-
         with torch.no_grad():
-            outputs_v2 = model_v2(augmented_image)
-            outputs_v3s = model_v3s(augmented_image)
+            outputs_v2 = model_v2(image_tensor)
+            outputs_v3s = model_v3s(image_tensor)
 
         prob_v2 = torch.softmax(outputs_v2, dim=1).cpu().numpy().flatten()
         prob_v3s = torch.softmax(outputs_v3s, dim=1).cpu().numpy().flatten()
@@ -100,3 +139,11 @@ if uploaded_file is not None:
 
     st.write(f"Prediction: **{pred_label}**")
     st.write(f"Confidence: **{confidence:.4f}**")
+
+    # Generate CAMs and overlay circles
+    cam_v2 = get_cam(model_v2, image_tensor, target_layer=-1)
+    cam_v3s = get_cam(model_v3s, image_tensor, target_layer=-1)
+    combined_cam = (cam_v2 + cam_v3s) / 2
+
+    image_with_circles = overlay_circles(image, combined_cam)
+    st.image(image_with_circles, caption='Image with highlighted regions.', use_column_width=True)
