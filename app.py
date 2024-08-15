@@ -50,33 +50,44 @@ def apply_clahe(image):
     clahe_image = clahe.apply(np.array(image))
     return Image.fromarray(clahe_image)
 
-# Generate CAMs and overlay bounding circles
 def get_cam(model, image_tensor, target_layer):
     model.eval()
+    activation = {}
+    
+    def hook_fn(m, i, o):
+        activation[target_layer] = o
+    
+    # Register hook for the target layer
+    target_layer_handle = model.base_model.features[target_layer].register_forward_hook(hook_fn)
+    
+    # Forward pass
     with torch.no_grad():
         outputs = model(image_tensor)
         predicted_class = torch.argmax(outputs, dim=1).item()
     
-    # Hook the target layer
-    activation = {}
-    def hook_fn(m, i, o):
-        activation[target_layer] = o.detach()
-    
-    target_layer_handle = model.base_model.features[target_layer].register_forward_hook(hook_fn)
-    
-    # Forward pass
-    model(image_tensor)
-    
+    # Remove the hook
     target_layer_handle.remove()
     
-    # Get the CAM
-    weights = model.base_model.classifier.weight[predicted_class].unsqueeze(-1).unsqueeze(-1)
+    # Get the weights of the final classifier layer
+    weights = model.base_model.classifier[-1].weight[predicted_class].unsqueeze(-1).unsqueeze(-1)
+    
+    # Generate the CAM
     cam = (weights * activation[target_layer]).sum(dim=1).squeeze().cpu().detach().numpy()
     cam = np.maximum(cam, 0)
     cam = cv2.resize(cam, (300, 300))
     cam = cam - np.min(cam)
     cam = cam / np.max(cam)
+    
     return cam
+
+# Ensure the correct target layer is specified (usually the last convolutional layer)
+# For MobileNetV2
+cam_v2 = get_cam(model_v2, image_tensor, target_layer=17)
+
+# For MobileNetV3Small
+cam_v3s = get_cam(model_v3s, image_tensor, target_layer=12)
+
+combined_cam = (cam_v2 + cam_v3s) / 2
 
 def overlay_circles(image, cam):
     cam_image = np.uint8(255 * cam)
@@ -90,6 +101,9 @@ def overlay_circles(image, cam):
         radius = int(radius)
         cv2.circle(image_np, center, radius, (255, 0, 0), 2)
     return Image.fromarray(image_np)
+
+image_with_circles = overlay_circles(image, combined_cam)
+st.image(image_with_circles, caption='Image with highlighted regions.', use_column_width=True)
     
 # Streamlit App
 st.title("Medical Image Classification")
