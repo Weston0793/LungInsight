@@ -69,10 +69,10 @@ def get_cam(model, image_tensor, target_layer):
     target_layer_handle.remove()
     
     # Get the weights of the final classifier layer
-    weights = model.base_model.classifier[-1].weight[predicted_class].unsqueeze(-1).unsqueeze(-1)
+    weights = model.base_model.classifier.weight[predicted_class].unsqueeze(-1).unsqueeze(-1)
     
     # Generate the CAM
-    cam = (weights * activation[target_layer]).sum(dim=1).squeeze().cpu().detach().numpy()
+    cam = torch.sum(weights * activation[target_layer], dim=0).squeeze().cpu().detach().numpy()
     cam = np.maximum(cam, 0)
     cam = cv2.resize(cam, (300, 300))
     cam = cam - np.min(cam)
@@ -143,8 +143,8 @@ if uploaded_file is not None:
     st.write(f"Confidence: **{confidence:.4f}**")
 
     # Generate CAMs and overlay circles
-    cam_v2 = get_cam(model_v2, image_tensor, target_layer=17)
-    cam_v3s = get_cam(model_v3s, image_tensor, target_layer=12)
+    cam_v2 = get_cam(model_v2, image_tensor, target_layer=-1)
+    cam_v3s = get_cam(model_v3s, image_tensor, target_layer=-1)
     combined_cam = (cam_v2 + cam_v3s) / 2
 
     image_with_circles = overlay_circles(image, combined_cam)
