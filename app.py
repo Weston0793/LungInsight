@@ -87,10 +87,16 @@ def get_cam(model, img_tensor, target_layer_name):
 
 # Function to overlay circles on the image
 def overlay_circles(image, cam):
-    # Invert CAM to find highest activation points correctly
-    cam_image = np.uint8(255 * (1 - cam))
-    _, thresh = cv2.threshold(cam_image, 127, 255, cv2.THRESH_BINARY)
+    # Scale cam to the range [0, 255] and invert to find highest activation points
+    cam_image = np.uint8(255 * cam)
+    
+    # Threshold to isolate the highest activation points
+    _, thresh = cv2.threshold(cam_image, 200, 255, cv2.THRESH_BINARY)
+    
+    # Find contours from the thresholded image
     contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    
+    # Sort contours by area in descending order
     sorted_contours = sorted(contours, key=cv2.contourArea, reverse=True)[:4]
     
     # Convert PIL image to numpy array
