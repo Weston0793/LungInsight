@@ -115,7 +115,7 @@ def overlay_hexagons(image, cam):
         
         # Calculate the center and size for the hexagon
         center_x, center_y = x + w // 2, y + h // 2
-        size = max(w, h) // 2
+        size = int(1.5 * max(w, h) // 2)  # Increase size to better cover activation areas
         
         # Generate points for a 6-sided polygon (hexagon)
         hexagon = np.array([
