@@ -148,10 +148,22 @@ if uploaded_file is not None:
     st.write(f"Prediction: **{pred_label}**")
     st.write(f"Confidence: **{confidence:.4f}**")
 
-    # Generate CAMs and overlay circles
+    # Generate CAMs
     cam_v2 = get_cam(model_v2, image_tensor, target_layer_name='base_model.features.18.2')
     cam_v3s = get_cam(model_v3s, image_tensor, target_layer_name='base_model.features.12')
     combined_cam = (cam_v2 + cam_v3s) / 2
 
+    # Overlay circles on the original image
     image_with_circles = overlay_circles(image, combined_cam)
+    
+    # Create a heatmap of the combined CAM
+    heatmap = cv2.applyColorMap(np.uint8(255 * combined_cam), cv2.COLORMAP_JET)
+    heatmap = np.float32(heatmap) / 255
+    image_np = np.array(image.resize((300, 300)))
+    image_np = np.float32(image_np) / 255
+    cam_overlay = heatmap + np.expand_dims(image_np, axis=2)
+    cam_overlay = cam_overlay / np.max(cam_overlay)
+    cam_overlay_image = Image.fromarray(np.uint8(255 * cam_overlay))
+
     st.image(image_with_circles, caption='Image with highlighted regions.', use_column_width=True)
+    st.image(cam_overlay_image, caption='Stacked CAM overlay.', use_column_width=True)
