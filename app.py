@@ -37,8 +37,8 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model_v2 = MultiClassMobileNetV2().to(device)
 model_v3s = MultiClassMobileNetV3Small().to(device)
 
-model_v2.load_state_dict(torch.load('bucket/MobileNetV2.pth', map_location=device))
-model_v3s.load_state_dict(torch.load('bucket/MobileNetV3Small.pth', map_location=device))
+model_v2.load_state_dict(torch.load('bucket/MobileNetV2_4.pth', map_location=device))
+model_v3s.load_state_dict(torch.load('bucket/MobileNetV3Small_1.pth', map_location=device))
 
 model_v2.eval()
 model_v3s.eval()
