@@ -87,7 +87,7 @@ def get_cam(model, img_tensor, target_layer_name):
 
 # Function to overlay circles on the image
 def overlay_circles(image, cam):
-    cam_image = np.uint8(255 * cam)
+    cam_image = np.uint8(255 * (1-cam))
     _, thresh = cv2.threshold(cam_image, 127, 255, cv2.THRESH_BINARY)
     contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     sorted_contours = sorted(contours, key=cv2.contourArea, reverse=True)[:4]
