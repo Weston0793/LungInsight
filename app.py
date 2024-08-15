@@ -50,36 +50,52 @@ def apply_clahe(image):
     clahe_image = clahe.apply(np.array(image))
     return Image.fromarray(clahe_image)
 
-def get_cam(model, image_tensor, target_layer):
+def get_cam(model, img_tensor, target_layer):
+    """
+    Generate a Class Activation Map (CAM) for a given image and model.
+    
+    Args:
+        model (nn.Module): The neural network model.
+        img_tensor (torch.Tensor): The input image tensor.
+        target_layer (str): The layer to target for CAM generation.
+        
+    Returns:
+        np.ndarray: The CAM mask.
+    """
     model.eval()
+    
+    def forward_hook(module, input, output):
+        activation[0] = output
+    
     activation = {}
+    layer = dict([*model.named_modules()]).get(target_layer, None)
+    if layer is None:
+        raise ValueError(f"Layer {target_layer} not found in the model")
+        
+    hook = layer.register_forward_hook(forward_hook)
     
-    def hook_fn(m, i, o):
-        activation[target_layer] = o
-    
-    # Register hook for the target layer
-    target_layer_handle = model.base_model.features[target_layer].register_forward_hook(hook_fn)
-    
-    # Forward pass
     with torch.no_grad():
-        outputs = model(image_tensor)
-        predicted_class = torch.argmax(outputs, dim=1).item()
+        output = model(img_tensor)
     
-    # Remove the hook
-    target_layer_handle.remove()
+    hook.remove()
     
-    # Get the weights of the final classifier layer
-    weights = model.base_model.classifier.weight[predicted_class].unsqueeze(-1).unsqueeze(-1)
+    output = output[0]
+    output = F.relu(output)
+    weight_softmax_params = list(model.parameters())[-2].data.numpy()
+    weight_softmax = np.squeeze(weight_softmax_params)
     
-    # Generate the CAM
-    cam = torch.sum(weights * activation[target_layer], dim=0).squeeze().cpu().detach().numpy()
+    activation = activation[0].squeeze().cpu().data.numpy()
+    cam = np.zeros(activation.shape[1:], dtype=np.float32)
+    
+    for i, w in enumerate(weight_softmax):
+        cam += w * activation[i, :, :]
+    
     cam = np.maximum(cam, 0)
-    cam = cv2.resize(cam, (300, 300))
+    cam = cv2.resize(cam, (img_tensor.shape[-1], img_tensor.shape[-2]))
     cam = cam - np.min(cam)
     cam = cam / np.max(cam)
     
     return cam
-
 def overlay_circles(image, cam):
     cam_image = np.uint8(255 * cam)
     _, thresh = cv2.threshold(cam_image, 127, 255, cv2.THRESH_BINARY)
