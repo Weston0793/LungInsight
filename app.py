@@ -70,8 +70,8 @@ def get_cam(model, image_tensor, target_layer):
     target_layer_handle.remove()
     
     # Get the CAM
-    weights = model.base_model.classifier[-1].weight[predicted_class].unsqueeze(-1).unsqueeze(-1)
-    cam = (weights * activation[target_layer]).sum(dim=1).squeeze().cpu().numpy()
+    weights = model.base_model.classifier.weight[predicted_class].unsqueeze(-1).unsqueeze(-1)
+    cam = (weights * activation[target_layer]).sum(dim=1).squeeze().cpu().detach().numpy()
     cam = np.maximum(cam, 0)
     cam = cv2.resize(cam, (300, 300))
     cam = cam - np.min(cam)
@@ -90,7 +90,7 @@ def overlay_circles(image, cam):
         radius = int(radius)
         cv2.circle(image_np, center, radius, (255, 0, 0), 2)
     return Image.fromarray(image_np)
-
+    
 # Streamlit App
 st.title("Medical Image Classification")
 st.write("Upload an X-ray image and get the prediction with confidence levels.")
