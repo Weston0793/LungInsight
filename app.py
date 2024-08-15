@@ -6,7 +6,7 @@ import numpy as np
 import os
 from torchvision import models
 import torch.nn as nn
-import pandas as pd
+import random
 
 # Load Models
 class MultiClassMobileNetV2(nn.Module):
@@ -61,7 +61,15 @@ if uploaded_file is not None:
         transforms.Normalize([0.5], [0.5])
     ])
 
-    image = transform(image).unsqueeze(0).to(device)
+    # Data augmentation
+    aug_transform = transforms.Compose([
+        transforms.RandomAffine(degrees=5, translate=(0.05, 0.05), scale=(0.95, 1.05)),
+        transforms.RandomHorizontalFlip(),
+        transforms.RandomVerticalFlip(),
+        transforms.RandomInvert(p=0.5)
+    ])
+
+    image_tensor = transform(image).unsqueeze(0).to(device)
 
     class_labels = ['Normal', 'TBC', 'Bacteria', 'Virus', 'COVID']
     
@@ -69,9 +77,11 @@ if uploaded_file is not None:
     predictions_v3s = []
 
     for _ in range(20):
+        augmented_image = aug_transform(image_tensor).to(device)
+
         with torch.no_grad():
-            outputs_v2 = model_v2(image)
-            outputs_v3s = model_v3s(image)
+            outputs_v2 = model_v2(augmented_image)
+            outputs_v3s = model_v3s(augmented_image)
 
         prob_v2 = torch.softmax(outputs_v2, dim=1).cpu().numpy().flatten()
         prob_v3s = torch.softmax(outputs_v3s, dim=1).cpu().numpy().flatten()
