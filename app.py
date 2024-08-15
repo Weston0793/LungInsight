@@ -85,7 +85,7 @@ def get_cam(model, img_tensor, target_layer_name):
     
     return cam
 
-# Function to overlay circles on the image
+# Function to overlay hexagons on the image
 def overlay_hexagons(image, cam):
     # Scale cam to the range [0, 255] to highlight the highest activation points
     cam_image = np.uint8(255 * cam)
@@ -154,14 +154,6 @@ def overlay_hexagons(image, cam):
     # Convert numpy array back to PIL image
     return Image.fromarray(image_np)
 
-# Assuming 'image' and 'combined_cam' are already defined
-image_with_hexagons = overlay_hexagons(image, combined_cam)
-
-# Show the final images with streamlit
-st.image(image_with_hexagons, caption='Image with highlighted regions.', use_column_width=True)
-st.image(cam_overlay_image, caption='Stacked CAM overlay.', use_column_width=True)
-
-
 # Streamlit App
 st.title("Medical Image Classification")
 st.write("Upload an X-ray image and get the prediction with confidence levels.")
@@ -216,8 +208,8 @@ if uploaded_file is not None:
     cam_v3s = get_cam(model_v3s, image_tensor, target_layer_name='base_model.features.12')
     combined_cam = (cam_v2 + cam_v3s) / 2
 
-    # Overlay circles on the original image
-    image_with_circles = overlay_hexagons(image, combined_cam)
+    # Overlay hexagons on the original image
+    image_with_hexagons = overlay_hexagons(image, combined_cam)
     
     # Create a heatmap of the combined CAM
     heatmap = cv2.applyColorMap(np.uint8(255 * (1-combined_cam)), cv2.COLORMAP_JET)
@@ -228,5 +220,5 @@ if uploaded_file is not None:
     cam_overlay = cam_overlay / np.max(cam_overlay)
     cam_overlay_image = Image.fromarray(np.uint8(255 * cam_overlay))
 
-    st.image(image_with_circles, caption='Image with highlighted regions.', use_column_width=True)
+    st.image(image_with_hexagons, caption='Image with highlighted regions.', use_column_width=True)
     st.image(cam_overlay_image, caption='Stacked CAM overlay.', use_column_width=True)
