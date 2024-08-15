@@ -86,8 +86,8 @@ def get_cam(model, img_tensor, target_layer_name):
     return cam
 
 # Function to overlay circles on the image
-def overlay_circles(image, cam):
-    # Scale cam to the range [0, 255] and invert to find highest activation points
+def overlay_hexagons(image, cam):
+    # Scale cam to the range [0, 255] to highlight the highest activation points
     cam_image = np.uint8(255 * cam)
     
     # Threshold to isolate the highest activation points
@@ -96,23 +96,33 @@ def overlay_circles(image, cam):
     # Find contours from the thresholded image
     contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     
-    # Sort contours by area in descending order
-    sorted_contours = sorted(contours, key=cv2.contourArea, reverse=True)[:4]
+    # Sort contours by area in descending order and take the top 3
+    sorted_contours = sorted(contours, key=cv2.contourArea, reverse=True)[:3]
     
     # Convert PIL image to numpy array
     image_np = np.array(image)
     
-    # Draw circles on the highest activation points
+    # Draw hexagons on the highest activation points
     for cnt in sorted_contours:
-        (x, y), radius = cv2.minEnclosingCircle(cnt)
-        center = (int(x), int(y))
-        radius = int(radius)
-        # Ensure circle sizes are consistent
-        if radius > 0:
-            cv2.circle(image_np, center, radius, (255, 0, 0), 2)
+        # Get the bounding box of the contour
+        x, y, w, h = cv2.boundingRect(cnt)
+        
+        # Calculate the center and size for the hexagon
+        center_x, center_y = x + w // 2, y + h // 2
+        size = max(w, h) // 2
+        
+        # Generate points for a 6-sided polygon (hexagon)
+        hexagon = np.array([
+            (center_x + size * np.cos(theta), center_y + size * np.sin(theta))
+            for theta in np.linspace(0, 2 * np.pi, 6, endpoint=False)
+        ], np.int32)
+        
+        # Draw the hexagon on the image
+        cv2.polylines(image_np, [hexagon], isClosed=True, color=(255, 0, 0), thickness=2)
     
     # Convert numpy array back to PIL image
     return Image.fromarray(image_np)
+
 
 # Streamlit App
 st.title("Medical Image Classification")
@@ -169,7 +179,7 @@ if uploaded_file is not None:
     combined_cam = (cam_v2 + cam_v3s) / 2
 
     # Overlay circles on the original image
-    image_with_circles = overlay_circles(image, combined_cam)
+    image_with_circles = overlay_hexagons(image, combined_cam)
     
     # Create a heatmap of the combined CAM
     heatmap = cv2.applyColorMap(np.uint8(255 * (1-combined_cam)), cv2.COLORMAP_JET)
