@@ -157,7 +157,7 @@ if uploaded_file is not None:
     image_with_circles = overlay_circles(image, combined_cam)
     
     # Create a heatmap of the combined CAM
-    heatmap = cv2.applyColorMap(np.uint8(255 * combined_cam), cv2.COLORMAP_JET)
+    heatmap = cv2.applyColorMap(np.uint8(255 * (1-combined_cam)), cv2.COLORMAP_JET)
     heatmap = np.float32(heatmap) / 255
     image_np = np.array(image.resize((300, 300)))
     image_np = np.float32(image_np) / 255
