@@ -7,6 +7,7 @@ import os
 from torchvision import models
 import torch.nn as nn
 import random
+import cv2
 
 # Load Models
 class MultiClassMobileNetV2(nn.Module):
