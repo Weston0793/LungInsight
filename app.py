@@ -38,8 +38,8 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model_v2 = MultiClassMobileNetV2().to(device)
 model_v3s = MultiClassMobileNetV3Small().to(device)
 
-model_v2.load_state_dict(torch.load('models/MobileNetV2.pth', map_location=device))
-model_v3s.load_state_dict(torch.load('models/MobileNetV3Small.pth', map_location=device))
+model_v2.load_state_dict(torch.load('bucket/MobileNetV2.pth', map_location=device))
+model_v3s.load_state_dict(torch.load('bucket/MobileNetV3Small.pth', map_location=device))
 
 model_v2.eval()
 model_v3s.eval()
@@ -57,7 +57,7 @@ if uploaded_file is not None:
     st.write("Classifying...")
 
     transform = transforms.Compose([
-        transforms.Resize((224, 224)),
+        transforms.Resize((300, 300)),
         transforms.ToTensor(),
         transforms.Normalize([0.5], [0.5])
     ])
