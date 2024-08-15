@@ -91,7 +91,7 @@ def overlay_hexagons(image, cam):
     cam_image = np.uint8(255 * cam)
     
     # Threshold to isolate the highest activation points
-    _, thresh = cv2.threshold(cam_image, 200, 255, cv2.THRESH_BINARY)
+    _, thresh = cv2.threshold(cam_image, 0, 50, cv2.THRESH_BINARY)
     
     # Find contours from the thresholded image
     contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -103,7 +103,7 @@ def overlay_hexagons(image, cam):
     image_np = np.array(image)
     
     hexagons = []
-    total_activation_points = np.sum(cam_image > 200)
+    total_activation_points = np.sum(cam_image < 50)
     covered_activation_points = 0
     
     for cnt in sorted_contours:
