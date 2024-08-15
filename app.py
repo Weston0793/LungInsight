@@ -4,7 +4,6 @@ import torchvision.transforms as transforms
 from PIL import Image
 import numpy as np
 import os
-from sklearn.metrics import roc_auc_score, roc_curve, auc
 from torchvision import models
 import torch.nn as nn
 import pandas as pd
