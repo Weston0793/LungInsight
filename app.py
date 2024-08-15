@@ -136,7 +136,7 @@ def overlay_hexagons(image, cam):
             # Calculate the area of the current hexagon
             mask = np.zeros_like(cam_image)
             cv2.fillPoly(mask, [hexagon], 1)
-            hexagon_activation_points = np.sum(mask * (cam_image > 200))
+            hexagon_activation_points = np.sum(mask * (cam_image < 50))
             
             hexagons.append(hexagon)
             covered_activation_points += hexagon_activation_points
