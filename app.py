@@ -107,7 +107,9 @@ def overlay_hexagons(image, cam):
     covered_activation_points = 0
     
     for cnt in sorted_contours:
-        if covered_activation_points >= 0.3 * total_activation_points or len(hexagons) >= 3:
+        if (len(hexagons) == 1 and covered_activation_points >= 0.2 * total_activation_points) or \
+           (len(hexagons) == 2 and covered_activation_points >= 0.1 * total_activation_points) or \
+           len(hexagons) >= 3:
             break
         
         # Get the bounding box of the contour
@@ -123,27 +125,19 @@ def overlay_hexagons(image, cam):
             for theta in np.linspace(0, 2 * np.pi, 6, endpoint=False)
         ], np.int32)
         
-        # Calculate the area of the current hexagon
-        mask = np.zeros_like(cam_image)
-        cv2.fillPoly(mask, [hexagon], 1)
-        hexagon_activation_points = np.sum(mask * (cam_image > 200))
-        
-        # Check for overlaps and merge if necessary
-        merge_required = False
-        for i, existing_hexagon in enumerate(hexagons):
-            existing_mask = np.zeros_like(cam_image)
-            cv2.fillPoly(existing_mask, [existing_hexagon], 1)
-            intersection = np.sum(mask * existing_mask)
-            
-            if intersection > 0:
-                # Merge the hexagons by taking the union of their contours
-                new_hexagon = cv2.convexHull(np.vstack([existing_hexagon, hexagon]))
-                hexagons[i] = new_hexagon
-                covered_activation_points += hexagon_activation_points
-                merge_required = True
+        # Check for overlaps with existing hexagons
+        overlaps = False
+        for existing_hexagon in hexagons:
+            if cv2.pointPolygonTest(existing_hexagon, (center_x, center_y), False) >= 0:
+                overlaps = True
                 break
         
-        if not merge_required:
+        if not overlaps:
+            # Calculate the area of the current hexagon
+            mask = np.zeros_like(cam_image)
+            cv2.fillPoly(mask, [hexagon], 1)
+            hexagon_activation_points = np.sum(mask * (cam_image > 200))
+            
             hexagons.append(hexagon)
             covered_activation_points += hexagon_activation_points
     
