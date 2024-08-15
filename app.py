@@ -87,16 +87,25 @@ def get_cam(model, img_tensor, target_layer_name):
 
 # Function to overlay circles on the image
 def overlay_circles(image, cam):
-    cam_image = np.uint8(255 * (1-cam))
+    # Invert CAM to find highest activation points correctly
+    cam_image = np.uint8(255 * (1 - cam))
     _, thresh = cv2.threshold(cam_image, 127, 255, cv2.THRESH_BINARY)
     contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     sorted_contours = sorted(contours, key=cv2.contourArea, reverse=True)[:4]
+    
+    # Convert PIL image to numpy array
     image_np = np.array(image)
+    
+    # Draw circles on the highest activation points
     for cnt in sorted_contours:
         (x, y), radius = cv2.minEnclosingCircle(cnt)
         center = (int(x), int(y))
         radius = int(radius)
-        cv2.circle(image_np, center, radius, (255, 0, 0), 2)
+        # Ensure circle sizes are consistent
+        if radius > 0:
+            cv2.circle(image_np, center, radius, (255, 0, 0), 2)
+    
+    # Convert numpy array back to PIL image
     return Image.fromarray(image_np)
 
 # Streamlit App
