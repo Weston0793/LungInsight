@@ -80,15 +80,6 @@ def get_cam(model, image_tensor, target_layer):
     
     return cam
 
-# Ensure the correct target layer is specified (usually the last convolutional layer)
-# For MobileNetV2
-cam_v2 = get_cam(model_v2, image_tensor, target_layer=17)
-
-# For MobileNetV3Small
-cam_v3s = get_cam(model_v3s, image_tensor, target_layer=12)
-
-combined_cam = (cam_v2 + cam_v3s) / 2
-
 def overlay_circles(image, cam):
     cam_image = np.uint8(255 * cam)
     _, thresh = cv2.threshold(cam_image, 127, 255, cv2.THRESH_BINARY)
@@ -102,9 +93,6 @@ def overlay_circles(image, cam):
         cv2.circle(image_np, center, radius, (255, 0, 0), 2)
     return Image.fromarray(image_np)
 
-image_with_circles = overlay_circles(image, combined_cam)
-st.image(image_with_circles, caption='Image with highlighted regions.', use_column_width=True)
-    
 # Streamlit App
 st.title("Medical Image Classification")
 st.write("Upload an X-ray image and get the prediction with confidence levels.")
@@ -155,8 +143,8 @@ if uploaded_file is not None:
     st.write(f"Confidence: **{confidence:.4f}**")
 
     # Generate CAMs and overlay circles
-    cam_v2 = get_cam(model_v2, image_tensor, target_layer=-1)
-    cam_v3s = get_cam(model_v3s, image_tensor, target_layer=-1)
+    cam_v2 = get_cam(model_v2, image_tensor, target_layer=17)
+    cam_v3s = get_cam(model_v3s, image_tensor, target_layer=12)
     combined_cam = (cam_v2 + cam_v3s) / 2
 
     image_with_circles = overlay_circles(image, combined_cam)
