@@ -107,7 +107,7 @@ if uploaded_file is not None:
 
     transform = transforms.Compose([
         transforms.Resize((300, 300)),
-        transforms.ToTensor())
+        transforms.ToTensor()
     ])
 
     image_tensor = transform(image_clahe).unsqueeze(0).to(device)
