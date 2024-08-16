@@ -111,8 +111,11 @@ def overlay_hexagons(image, cam):
     covered_activation_points = 0
 
     # Process left and right halves separately
-    for half, offset in zip(["left", "right"], [0, midline]):
-        half_contours = [cnt for cnt in sorted_contours if (cnt[:,:,0].min() + cnt[:,:,0].max()) // 2 < midline if half == "left" else cnt[:,:,0].min() >= midline]
+    for half in ["left", "right"]:
+        if half == "left":
+            half_contours = [cnt for cnt in sorted_contours if (cnt[:,:,0].min() + cnt[:,:,0].max()) // 2 < midline]
+        else:
+            half_contours = [cnt for cnt in sorted_contours if cnt[:,:,0].min() >= midline]
         
         for cnt in half_contours:
             if (len(hexagons) == 1 and covered_activation_points >= 0.2 * total_activation_points) or \
@@ -123,7 +126,9 @@ def overlay_hexagons(image, cam):
             x, y, w, h = cv2.boundingRect(cnt)
             
             # Calculate the center and size for the hexagon, ensuring it covers at least 10% but not more than 30% of the image
-            center_x, center_y = x + w // 2 + offset, y + h // 2
+            center_x, center_y = x + w // 2, y + h // 2
+            if half == "right":
+                center_x += midline
             size = min(int(0.3 * width), int(0.5 * max(w, h) // 2))
             
             # Generate points for a 6-sided polygon (hexagon)
@@ -148,7 +153,7 @@ def overlay_hexagons(image, cam):
     
     # Convert numpy array back to PIL image
     return Image.fromarray(image_np)
-
+    
 # Streamlit App
 st.title("Medical Image Classification")
 st.write("Upload an X-ray image and get the prediction with confidence levels.")
