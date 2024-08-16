@@ -106,7 +106,7 @@ def overlay_hexagons(image, cam):
 
     def process_half(half_image, half_cam_image):
         # Threshold to isolate the low activation points
-        _, thresh = cv2.threshold(half_cam_image, 205, 255, cv2.THRESH_BINARY_INV)
+        _, thresh = cv2.threshold(half_cam_image, 0, 50, cv2.THRESH_BINARY_INV)
 
         # Find contours from the thresholded image
         contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
