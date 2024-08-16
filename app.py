@@ -187,6 +187,7 @@ if uploaded_file is not None:
 
     # Overlay rectangles on the original image
     image_with_rectangles = overlay_rectangles(image, combined_cam)
+    st.image(image_with_rectangles, caption='Image with highlighted regions.', use_column_width=True)
     
     # Create a heatmap of the combined CAM
     heatmap = cv2.applyColorMap(np.uint8(255 * (1-combined_cam)), cv2.COLORMAP_JET)
@@ -197,5 +198,5 @@ if uploaded_file is not None:
     cam_overlay = cam_overlay / np.max(cam_overlay)
     cam_overlay_image = Image.fromarray(np.uint8(255 * cam_overlay))
 
-    st.image(image_with_rectangles, caption='Image with highlighted regions.', use_column_width=True)
+
     st.image(cam_overlay_image, caption='Stacked CAM overlay.', use_column_width=True)
