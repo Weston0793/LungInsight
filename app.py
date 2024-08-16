@@ -90,19 +90,18 @@ def overlay_rectangles(image, cam):
     image_np = np.array(image)
     original_height, original_width = image_np.shape[:2]
     
-    # Resize the CAM to match the original image size
+    # Ensure CAM is resized to the original image's dimensions
     cam_resized = cv2.resize(cam, (original_width, original_height))
     cam_image = np.uint8(255 * cam_resized)
     
-    # Split the CAM into left and right halves
-    midline = cam_image.shape[1] // 2
-    cam_left = cam_image[:, :midline]
-    cam_right = cam_image[:, midline:]
+    # Debugging: Show CAM resized dimensions
+    st.write(f"CAM resized dimensions: {cam_resized.shape}")
+    st.write(f"Original image dimensions: {original_width}x{original_height}")
     
-    # Function to process a CAM half and draw rectangles on the original image
-    def process_and_draw(cam_half, origin_x):
+    # Function to process CAM and draw rectangles on the original image
+    def process_and_draw(cam_img):
         # Threshold to isolate the lowest activation points
-        _, thresh = cv2.threshold(cam_half, 0, 50, cv2.THRESH_BINARY_INV)
+        _, thresh = cv2.threshold(cam_img, 0, 50, cv2.THRESH_BINARY_INV)
         
         # Find contours in the thresholded image
         contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -119,9 +118,6 @@ def overlay_rectangles(image, cam):
             
             # Debugging: log the raw bounding box values
             st.write(f"Raw bounding box - x: {x}, y: {y}, w: {w}, h: {h}")
-            
-            # Translate the bounding box according to the origin
-            x += origin_x
             
             # Check if the bounding box exceeds the allowed area
             if w * h > max_area:
@@ -142,9 +138,8 @@ def overlay_rectangles(image, cam):
             # Stop after drawing the first valid rectangle
             break
     
-    # Process and draw rectangles on the left and right halves
-    process_and_draw(cam_left, origin_x=0)            # Process left half
-    process_and_draw(cam_right, origin_x=midline)     # Process right half
+    # Process and draw rectangles on the resized CAM
+    process_and_draw(cam_image)
     
     # Convert numpy array back to PIL image and return
     return Image.fromarray(image_np)
