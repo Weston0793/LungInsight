@@ -85,8 +85,7 @@ def get_cam(model, img_tensor, target_layer_name):
     
     return cam
 
-# Function to overlay hexagons on the image
-def overlay_hexagons(image, cam):
+def overlay_rectangles(image, cam):
     # Scale cam to the range [0, 255] to highlight the highest activation points
     cam_image = np.uint8(255 * cam)
     
@@ -106,7 +105,7 @@ def overlay_hexagons(image, cam):
     height, width = cam_image.shape
     midline = width // 2
     
-    hexagons = []
+    rectangles = []
     total_activation_points = np.sum(cam_image < 50)
     covered_activation_points = 0
 
@@ -118,38 +117,27 @@ def overlay_hexagons(image, cam):
             half_contours = [cnt for cnt in sorted_contours if cnt[:,:,0].min() >= midline]
         
         for cnt in half_contours:
-            if (len(hexagons) == 1 and covered_activation_points >= 0.2 * total_activation_points) or \
-               (len(hexagons) == 2):
+            if (len(rectangles) == 1 and covered_activation_points >= 0.2 * total_activation_points) or \
+               (len(rectangles) == 2):
                 break
 
             # Get the bounding box of the contour
             x, y, w, h = cv2.boundingRect(cnt)
             
-            # Calculate the center and size for the hexagon, ensuring it covers at least 10% but not more than 30% of the image
-            center_x, center_y = x + w // 2, y + h // 2
-            if half == "right":
-                center_x += midline
-            size = min(int(0.3 * width), int(0.5 * max(w, h) // 2))
-            
-            # Generate points for a 6-sided polygon (hexagon)
-            hexagon = np.array([
-                (center_x + size * np.cos(theta), center_y + size * np.sin(theta))
-                for theta in np.linspace(0, 2 * np.pi, 6, endpoint=False)
-            ], np.int32)
-            
-            # Calculate the area of the current hexagon
-            mask = np.zeros_like(cam_image)
-            cv2.fillPoly(mask, [hexagon], 1)
-            hexagon_activation_points = np.sum(mask * (cam_image < 50))
-            
-            # Add the hexagon if it covers the required activation points
-            if hexagon_activation_points >= 0.1 * total_activation_points:
-                hexagons.append(hexagon)
-                covered_activation_points += hexagon_activation_points
+            # Ensure the rectangle is within 30% of the image area
+            if w * h <= 0.3 * width * height:
+                rectangles.append((x, y, w, h))
+                covered_activation_points += cv2.contourArea(cnt)
     
-    # Draw hexagons on the image
-    for hexagon in hexagons:
-        cv2.polylines(image_np, [hexagon], isClosed=True, color=(255, 0, 0), thickness=2)
+    # Ensure at least one rectangle is present
+    if len(rectangles) == 0 and len(sorted_contours) > 0:
+        x, y, w, h = cv2.boundingRect(sorted_contours[0])
+        rectangles.append((x, y, w, h))
+
+    # Draw rectangles on the image
+    for rect in rectangles:
+        x, y, w, h = rect
+        cv2.rectangle(image_np, (x, y), (x + w, y + h), color=(255, 0, 0), thickness=2)
     
     # Convert numpy array back to PIL image
     return Image.fromarray(image_np)
