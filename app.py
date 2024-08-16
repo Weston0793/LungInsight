@@ -89,53 +89,63 @@ def overlay_rectangles(image, cam):
     # Scale cam to the range [0, 255] to highlight the highest activation points
     cam_image = np.uint8(255 * cam)
     
-    # Threshold to isolate the lowest activation points
-    _, thresh = cv2.threshold(cam_image, 0, 50, cv2.THRESH_BINARY_INV)
-    
-    # Find contours from the thresholded image
-    contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    
-    # Sort contours by area in descending order (largest first)
-    sorted_contours = sorted(contours, key=cv2.contourArea, reverse=True)
-    
     # Get dimensions of the original image and the CAM image
     image_np = np.array(image)
     original_height, original_width = image_np.shape[:2]
     cam_height, cam_width = cam_image.shape[:2]
     
-    # Calculate scaling factors to adjust bounding boxes to the original image size
-    scale_x = original_width / cam_width
-    scale_y = original_height / cam_height
-    
-    # Define maximum area for a bounding box to be 30% of the original image area
-    max_area = 0.3 * original_width * original_height
-    
-    # Separate contours into left and right halves based on the bounding box's position relative to the midline
+    # Halve the CAM image along the x-axis
     midline = cam_width // 2
-    left_contours = [cnt for cnt in sorted_contours if cv2.boundingRect(cnt)[0] < midline]
-    right_contours = [cnt for cnt in sorted_contours if cv2.boundingRect(cnt)[0] >= midline]
+    cam_left = cam_image[:, :midline]
+    cam_right = cam_image[:, midline:]
     
-    # Function to process contours and draw bounding boxes
-    def process_contours(contours, side):
-        for cnt in contours:
+    # Process each half separately
+    def process_half(cam_half, offset_x=0):
+        # Threshold to isolate the lowest activation points
+        _, thresh = cv2.threshold(cam_half, 0, 50, cv2.THRESH_BINARY_INV)
+        
+        # Find contours from the thresholded image
+        contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        
+        # Sort contours by area in descending order (largest first)
+        sorted_contours = sorted(contours, key=cv2.contourArea, reverse=True)
+        
+        # Calculate scaling factors to adjust bounding boxes to the original image size
+        scale_x = original_width / cam_width
+        scale_y = original_height / cam_height
+        
+        # Define maximum area for a bounding box to be 30% of the original image area
+        max_area = 0.3 * original_width * original_height
+        
+        # List to store the drawn rectangles
+        rectangles = []
+        
+        # Process each contour
+        for cnt in sorted_contours:
             # Get the bounding box of the contour
             x, y, w, h = cv2.boundingRect(cnt)
             
             # Scale the bounding box coordinates to the original image size
-            x = int(x * scale_x)
+            x = int((x + offset_x) * scale_x)
             y = int(y * scale_y)
             w = int(w * scale_x)
             h = int(h * scale_y)
             
             # Check if the bounding box area is within the allowed limit
             if w * h <= max_area:
-                cv2.rectangle(image_np, (x, y), (x + w, y + h), color=(255, 0, 0), thickness=2)
-                # Comment out break to allow multiple rectangles to be drawn per side
-                # break
+                rectangles.append((x, y, x + w, y + h))
+                break  # Stop after the first valid rectangle is found
+        
+        return rectangles
     
-    # Process left and right halves separately
-    process_contours(left_contours, "left")
-    process_contours(right_contours, "right")
+    # Process left and right halves
+    left_rectangles = process_half(cam_left, offset_x=0)
+    right_rectangles = process_half(cam_right, offset_x=midline)
+    
+    # Draw rectangles on the image
+    for rect in left_rectangles + right_rectangles:
+        x1, y1, x2, y2 = rect
+        cv2.rectangle(image_np, (x1, y1), (x2, y2), color=(255, 0, 0), thickness=2)
     
     # Convert numpy array back to PIL image
     return Image.fromarray(image_np)
