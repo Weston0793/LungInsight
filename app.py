@@ -99,7 +99,7 @@ def overlay_rectangles(image, cam):
     cam_right = cam_image[:, midline:]
     
     # Function to process a CAM half and draw rectangles on the original image
-    def process_and_draw(cam_half, offset_x=0):
+    def process_and_draw(cam_half, origin_x):
         # Threshold to isolate the lowest activation points
         _, thresh = cv2.threshold(cam_half, 0, 50, cv2.THRESH_BINARY_INV)
         
@@ -120,31 +120,40 @@ def overlay_rectangles(image, cam):
             # Get the bounding box of the contour
             x, y, w, h = cv2.boundingRect(cnt)
             
+            # Debugging: print the raw bounding box values
+            print(f"Raw bounding box - x: {x}, y: {y}, w: {w}, h: {h}")
+            
             # Scale bounding box to original image size
-            x = int((x + offset_x) * scale_x)
+            x = int((x + origin_x) * scale_x)
             y = int(y * scale_y)
             w = int(w * scale_x)
             h = int(h * scale_y)
             
-            # Adjust the bounding box if it exceeds the allowed size
+            # Debugging: print the scaled bounding box values
+            print(f"Scaled bounding box - x: {x}, y: {y}, w: {w}, h: {h}")
+            
+            # Check if the bounding box exceeds the allowed area
             if w * h > max_area:
                 scale_factor = (max_area / (w * h)) ** 0.5
                 w = int(w * scale_factor)
                 h = int(h * scale_factor)
             
-            # Recalculate x2 and y2 after scaling
-            x2 = x + w
-            y2 = y + h
+            # Ensure bounding box stays within the image bounds
+            x = min(max(x, 0), original_width - w)
+            y = min(max(y, 0), original_height - h)
+            
+            # Debugging: print the final bounding box values
+            print(f"Final bounding box - x: {x}, y: {y}, w: {w}, h: {h}")
             
             # Draw the rectangle on the image
-            cv2.rectangle(image_np, (x, y), (x2, y2), color=(255, 0, 0), thickness=2)
+            cv2.rectangle(image_np, (x, y), (x + w, y + h), color=(255, 0, 0), thickness=2)
             
             # Stop after drawing the first valid rectangle
             break
     
     # Process and draw rectangles on the left and right halves
-    process_and_draw(cam_left, offset_x=0)            # Process left half
-    process_and_draw(cam_right, offset_x=midline)     # Process right half
+    process_and_draw(cam_left, origin_x=0)            # Process left half
+    process_and_draw(cam_right, origin_x=midline)     # Process right half
     
     # Convert numpy array back to PIL image and return
     return Image.fromarray(image_np)
