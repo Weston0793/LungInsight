@@ -93,51 +93,25 @@ def overlay_rectangles(image, cam):
     _, thresh = cv2.threshold(cam_image, 0, 50, cv2.THRESH_BINARY_INV)
     
     # Find contours from the thresholded image
-    contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    
-    # Sort contours by area in ascending order (to find the lowest activation points)
-    sorted_contours = sorted(contours, key=cv2.contourArea)
+    contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     
     # Convert PIL image to numpy array
     image_np = np.array(image)
     
-    # Halve the image in the sagittal plane
-    height, width = cam_image.shape
-    midline = width // 2
-    
-    rectangles = []
-    total_activation_points = np.sum(cam_image < 50)
-    covered_activation_points = 0
-
-    # Process left and right halves separately
-    for half in ["left", "right"]:
-        if half == "left":
-            half_contours = [cnt for cnt in sorted_contours if (cnt[:,:,0].min() + cnt[:,:,0].max()) // 2 < midline]
-        else:
-            half_contours = [cnt for cnt in sorted_contours if cnt[:,:,0].min() >= midline]
-        
-        for cnt in half_contours:
-            if (len(rectangles) == 1 and covered_activation_points >= 0.2 * total_activation_points) or \
-               (len(rectangles) == 2):
-                break
-
+    # Ensure at least one rectangle is present
+    if len(contours) == 0:
+        height, width = cam_image.shape
+        # Draw a central rectangle if no contours are found
+        rect_x, rect_y = width // 4, height // 4
+        rect_w, rect_h = width // 2, height // 2
+        cv2.rectangle(image_np, (rect_x, rect_y), (rect_x + rect_w, rect_y + rect_h), color=(255, 0, 0), thickness=2)
+    else:
+        for cnt in contours:
             # Get the bounding box of the contour
             x, y, w, h = cv2.boundingRect(cnt)
             
-            # Ensure the rectangle is within 30% of the image area
-            if w * h <= 0.3 * width * height:
-                rectangles.append((x, y, w, h))
-                covered_activation_points += cv2.contourArea(cnt)
-    
-    # Ensure at least one rectangle is present
-    if len(rectangles) == 0 and len(sorted_contours) > 0:
-        x, y, w, h = cv2.boundingRect(sorted_contours[0])
-        rectangles.append((x, y, w, h))
-
-    # Draw rectangles on the image
-    for rect in rectangles:
-        x, y, w, h = rect
-        cv2.rectangle(image_np, (x, y), (x + w, y + h), color=(255, 0, 0), thickness=2)
+            # Ensure the rectangle is visible and within the image bounds
+            cv2.rectangle(image_np, (x, y), (x + w, y + h), color=(255, 0, 0), thickness=2)
     
     # Convert numpy array back to PIL image
     return Image.fromarray(image_np)
