@@ -86,86 +86,66 @@ def get_cam(model, img_tensor, target_layer_name):
     return cam
 
 # Function to overlay hexagons on the image
-import numpy as np
-import cv2
-from PIL import Image
-
 def overlay_hexagons(image, cam):
-    # Scale cam to the range [0, 255] to highlight the lowest activation points
+    # Scale cam to the range [0, 255] to highlight the highest activation points
     cam_image = np.uint8(255 * cam)
-
+    
+    # Threshold to isolate the lowest activation points
+    _, thresh = cv2.threshold(cam_image, 0, 50, cv2.THRESH_BINARY_INV)
+    
+    # Find contours from the thresholded image
+    contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    
+    # Sort contours by area in ascending order (to find the lowest activation points)
+    sorted_contours = sorted(contours, key=cv2.contourArea)
+    
     # Convert PIL image to numpy array
     image_np = np.array(image)
+    
+    # Halve the image in the sagittal plane
+    height, width = cam_image.shape
+    midline = width // 2
+    
+    hexagons = []
+    total_activation_points = np.sum(cam_image < 50)
+    covered_activation_points = 0
 
-    # Split the image and cam_image into left and right halves
-    mid_x = image_np.shape[1] // 2
-    left_half = image_np[:, :mid_x]
-    right_half = image_np[:, mid_x:]
-    left_cam = cam_image[:, :mid_x]
-    right_cam = cam_image[:, mid_x:]
-
-    def process_half(half_image, half_cam_image):
-        # Threshold to isolate the low activation points
-        _, thresh = cv2.threshold(half_cam_image, 0, 50, cv2.THRESH_BINARY_INV)
-
-        # Find contours from the thresholded image
-        contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-
-        # Sort contours by area in descending order
-        sorted_contours = sorted(contours, key=cv2.contourArea, reverse=True)
-
-        hexagons = []
-        total_activation_points = np.sum(half_cam_image < 50)
-        covered_activation_points = 0
-
-        for cnt in sorted_contours:
-            if len(hexagons) == 1 and covered_activation_points >= 0.1 * total_activation_points:
+    # Process left and right halves separately
+    for half, offset in zip(["left", "right"], [0, midline]):
+        half_contours = [cnt for cnt in sorted_contours if (cnt[:,:,0].min() + cnt[:,:,0].max()) // 2 < midline if half == "left" else cnt[:,:,0].min() >= midline]
+        
+        for cnt in half_contours:
+            if (len(hexagons) == 1 and covered_activation_points >= 0.2 * total_activation_points) or \
+               (len(hexagons) == 2):
                 break
 
             # Get the bounding box of the contour
             x, y, w, h = cv2.boundingRect(cnt)
-
-            # Calculate the center and size for the hexagon
-            center_x, center_y = x + w // 2, y + h // 2
-            size = int(0.45 * max(w, h) // 2)
-
+            
+            # Calculate the center and size for the hexagon, ensuring it covers at least 10% but not more than 30% of the image
+            center_x, center_y = x + w // 2 + offset, y + h // 2
+            size = min(int(0.3 * width), int(0.5 * max(w, h) // 2))
+            
             # Generate points for a 6-sided polygon (hexagon)
             hexagon = np.array([
                 (center_x + size * np.cos(theta), center_y + size * np.sin(theta))
                 for theta in np.linspace(0, 2 * np.pi, 6, endpoint=False)
             ], np.int32)
-
-            # Check for overlaps with existing hexagons
-            overlaps = False
-            for existing_hexagon in hexagons:
-                if cv2.pointPolygonTest(existing_hexagon, (center_x, center_y), False) >= 0:
-                    overlaps = True
-                    break
-
-            if not overlaps:
-                # Calculate the area of the current hexagon
-                mask = np.zeros_like(half_cam_image)
-                cv2.fillPoly(mask, [hexagon], 1)
-                hexagon_activation_points = np.sum(mask * (half_cam_image < 50))
-
-                if hexagon_activation_points >= 0.1 * total_activation_points:
-                    hexagons.append(hexagon)
-                    covered_activation_points += hexagon_activation_points
-
-        # Draw hexagons on the half-image
-        for hexagon in hexagons:
-            cv2.polylines(half_image, [hexagon], isClosed=True, color=(255, 0, 0), thickness=2)
-
-        return half_image
-
-    # Process left and right halves separately
-    left_half_processed = process_half(left_half, left_cam)
-    right_half_processed = process_half(right_half, right_cam)
-
-    # Merge the two halves back into the original image
-    image_np[:, :mid_x] = left_half_processed
-    image_np[:, mid_x:] = right_half_processed
-
+            
+            # Calculate the area of the current hexagon
+            mask = np.zeros_like(cam_image)
+            cv2.fillPoly(mask, [hexagon], 1)
+            hexagon_activation_points = np.sum(mask * (cam_image < 50))
+            
+            # Add the hexagon if it covers the required activation points
+            if hexagon_activation_points >= 0.1 * total_activation_points:
+                hexagons.append(hexagon)
+                covered_activation_points += hexagon_activation_points
+    
+    # Draw hexagons on the image
+    for hexagon in hexagons:
+        cv2.polylines(image_np, [hexagon], isClosed=True, color=(255, 0, 0), thickness=2)
+    
     # Convert numpy array back to PIL image
     return Image.fromarray(image_np)
 
