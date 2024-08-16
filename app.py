@@ -86,20 +86,20 @@ def get_cam(model, img_tensor, target_layer_name):
     return cam
 
 def overlay_rectangles(image, cam):
-    # Convert original image to numpy array
+    # Convert the original image to a numpy array
     image_np = np.array(image)
     original_height, original_width = image_np.shape[:2]
     
     # Scale CAM to [0, 255] range
     cam_image = np.uint8(255 * cam)
     
-    # Split CAM into left and right halves
+    # Split the CAM into left and right halves
     midline = cam_image.shape[1] // 2
     cam_left = cam_image[:, :midline]
     cam_right = cam_image[:, midline:]
     
     # Function to process a CAM half and draw rectangles on the original image
-    def process_and_draw(cam_half, origin_x):
+    def process_and_draw(cam_half, offset_x=0):
         # Threshold to isolate the lowest activation points
         _, thresh = cv2.threshold(cam_half, 0, 50, cv2.THRESH_BINARY_INV)
         
@@ -121,19 +121,30 @@ def overlay_rectangles(image, cam):
             x, y, w, h = cv2.boundingRect(cnt)
             
             # Scale bounding box to original image size
-            x = int((x + origin_x) * scale_x)
+            x = int((x + offset_x) * scale_x)
             y = int(y * scale_y)
             w = int(w * scale_x)
             h = int(h * scale_y)
             
-            # Only draw bounding box if its area is within the allowed limit
-            if w * h <= max_area:
-                cv2.rectangle(image_np, (x, y), (x + w, y + h), color=(255, 0, 0), thickness=2)
-                break  # Stop after drawing the first valid rectangle
+            # Adjust the bounding box if it exceeds the allowed size
+            if w * h > max_area:
+                scale_factor = (max_area / (w * h)) ** 0.5
+                w = int(w * scale_factor)
+                h = int(h * scale_factor)
+            
+            # Recalculate x2 and y2 after scaling
+            x2 = x + w
+            y2 = y + h
+            
+            # Draw the rectangle on the image
+            cv2.rectangle(image_np, (x, y), (x2, y2), color=(255, 0, 0), thickness=2)
+            
+            # Stop after drawing the first valid rectangle
+            break
     
     # Process and draw rectangles on the left and right halves
-    process_and_draw(cam_left, origin_x=0)            # Process left half
-    process_and_draw(cam_right, origin_x=midline)     # Process right half
+    process_and_draw(cam_left, offset_x=0)            # Process left half
+    process_and_draw(cam_right, offset_x=midline)     # Process right half
     
     # Convert numpy array back to PIL image and return
     return Image.fromarray(image_np)
