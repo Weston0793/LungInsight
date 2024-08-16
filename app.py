@@ -88,11 +88,11 @@ def get_cam(model, img_tensor, target_layer_name):
 # Function to overlay hexagons on the image
 # Function to overlay hexagons on the image
 def overlay_hexagons(image, cam):
-    # Scale cam to the range [0, 255] to highlight the lowest activation points
+    # Scale cam to the range [0, 255] to highlight the highest activation points
     cam_image = np.uint8(255 * cam)
     
-    # Threshold to isolate the lowest activation points
-    _, thresh = cv2.threshold(cam_image, 205, 255, cv2.THRESH_BINARY_INV)
+    # Threshold to isolate the highest activation points (keeping your original threshold)
+    _, thresh = cv2.threshold(cam_image, 0, 50, cv2.THRESH_BINARY)
     
     # Find contours from the thresholded image
     contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -104,36 +104,32 @@ def overlay_hexagons(image, cam):
     image_np = np.array(image)
     
     hexagons = []
-    total_activation_points = np.sum(cam_image > 205)
-    covered_activation_points = 0
+    total_activation_points = np.sum(cam_image < 50)
     
     # Split the image into two halves along the sagittal plane
     mid_x = image_np.shape[1] // 2
     left_half = image_np[:, :mid_x]
     right_half = image_np[:, mid_x:]
+    halves = [(left_half, cam_image[:, :mid_x]), (right_half, cam_image[:, mid_x:])]
     
-    # Process each half separately
-    for half, half_cam in zip([left_half, right_half], [cam_image[:, :mid_x], cam_image[:, mid_x:]]):
+    for half_image, half_cam_image in halves:
         half_hexagons = []
-        half_covered_points = 0
+        covered_activation_points = 0
+        
         for cnt in sorted_contours:
-            if (len(half_hexagons) == 1 and half_covered_points >= 0.2 * total_activation_points) or \
-               (len(half_hexagons) == 2 and half_covered_points >= 0.1 * total_activation_points) or \
-               len(half_hexagons) >= 3:
+            if len(half_hexagons) == 1 and covered_activation_points >= 0.1 * total_activation_points:
                 break
 
             # Get the bounding box of the contour
             x, y, w, h = cv2.boundingRect(cnt)
 
-            # Skip contours that do not lie within the current half
-            if x >= mid_x and half is left_half:
-                continue
-            if x + w <= mid_x and half is right_half:
-                continue
-
             # Adjust x to be relative to the current half
-            if half is right_half:
+            if half_image is right_half:
                 x -= mid_x
+
+            # Check if the contour is within the half being processed
+            if x + w <= 0 or x >= half_image.shape[1]:
+                continue
 
             # Calculate the center and size for the hexagon
             center_x, center_y = x + w // 2, y + h // 2
@@ -154,17 +150,17 @@ def overlay_hexagons(image, cam):
 
             if not overlaps:
                 # Calculate the area of the current hexagon
-                mask = np.zeros_like(half_cam)
+                mask = np.zeros_like(half_cam_image)
                 cv2.fillPoly(mask, [hexagon], 1)
-                hexagon_activation_points = np.sum(mask * (half_cam > 205))
+                hexagon_activation_points = np.sum(mask * (half_cam_image < 50))
 
-                half_hexagons.append(hexagon)
-                half_covered_points += hexagon_activation_points
+                if hexagon_activation_points >= 0.1 * total_activation_points and len(half_hexagons) == 0:
+                    half_hexagons.append(hexagon)
+                    covered_activation_points += hexagon_activation_points
 
         hexagons.extend(half_hexagons)
-        covered_activation_points += half_covered_points
-    
-    # Draw hexagons on the original image
+
+    # Draw hexagons on the image
     for hexagon in hexagons:
         if hexagon[0][0] < mid_x:
             cv2.polylines(left_half, [hexagon], isClosed=True, color=(255, 0, 0), thickness=2)
@@ -177,7 +173,6 @@ def overlay_hexagons(image, cam):
     
     # Convert numpy array back to PIL image
     return Image.fromarray(image_np)
-
 
 # Streamlit App
 st.title("Medical Image Classification")
