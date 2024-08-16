@@ -104,13 +104,16 @@ def overlay_rectangles(image, cam):
     scale_x = original_width / cam_width
     scale_y = original_height / cam_height
     
-    # Ensure at least one rectangle is present
-    if len(contours) == 0:
-        # Draw a central rectangle if no contours are found
-        rect_x, rect_y = original_width // 4, original_height // 4
-        rect_w, rect_h = original_width // 2, original_height // 2
-        cv2.rectangle(image_np, (rect_x, rect_y), (rect_x + rect_w, rect_y + rect_h), color=(255, 0, 0), thickness=2)
-    else:
+    # Define maximum area for a bounding box to be 30% of the original image area
+    max_area = 0.3 * original_width * original_height
+    
+    # Separate contours into left and right halves based on x-coordinate
+    midline = cam_width // 2
+    left_contours = [cnt for cnt in contours if cv2.boundingRect(cnt)[0] + cv2.boundingRect(cnt)[2] // 2 < midline]
+    right_contours = [cnt for cnt in contours if cv2.boundingRect(cnt)[0] + cv2.boundingRect(cnt)[2] // 2 >= midline]
+    
+    # Function to process contours and draw bounding boxes
+    def process_contours(contours, side):
         for cnt in contours:
             # Get the bounding box of the contour
             x, y, w, h = cv2.boundingRect(cnt)
@@ -121,11 +124,18 @@ def overlay_rectangles(image, cam):
             w = int(w * scale_x)
             h = int(h * scale_y)
             
-            # Ensure the rectangle is visible and within the image bounds
-            cv2.rectangle(image_np, (x, y), (x + w, y + h), color=(255, 0, 0), thickness=2)
+            # Check if the bounding box area is within the allowed limit
+            if w * h <= max_area:
+                cv2.rectangle(image_np, (x, y), (x + w, y + h), color=(255, 0, 0), thickness=2)
+                break  # Stop after the first valid rectangle is found
+    
+    # Process left and right halves separately
+    process_contours(left_contours, "left")
+    process_contours(right_contours, "right")
     
     # Convert numpy array back to PIL image
     return Image.fromarray(image_np)
+
     
 # Streamlit App
 st.title("Medical Image Classification")
