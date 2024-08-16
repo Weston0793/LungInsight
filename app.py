@@ -90,25 +90,36 @@ def overlay_rectangles(image, cam):
     cam_image = np.uint8(255 * cam)
     
     # Threshold to isolate the lowest activation points
-    _, thresh = cv2.threshold(cam_image, 200, 255, cv2.THRESH_BINARY_INV)
+    _, thresh = cv2.threshold(cam_image, 0, 50, cv2.THRESH_BINARY_INV)
     
     # Find contours from the thresholded image
     contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     
-    # Convert PIL image to numpy array
+    # Get dimensions of the original image and the CAM image
     image_np = np.array(image)
+    original_height, original_width = image_np.shape[:2]
+    cam_height, cam_width = cam_image.shape[:2]
+    
+    # Calculate scaling factors to adjust bounding boxes to the original image size
+    scale_x = original_width / cam_width
+    scale_y = original_height / cam_height
     
     # Ensure at least one rectangle is present
     if len(contours) == 0:
-        height, width = cam_image.shape
         # Draw a central rectangle if no contours are found
-        rect_x, rect_y = width // 4, height // 4
-        rect_w, rect_h = width // 2, height // 2
+        rect_x, rect_y = original_width // 4, original_height // 4
+        rect_w, rect_h = original_width // 2, original_height // 2
         cv2.rectangle(image_np, (rect_x, rect_y), (rect_x + rect_w, rect_y + rect_h), color=(255, 0, 0), thickness=2)
     else:
         for cnt in contours:
             # Get the bounding box of the contour
             x, y, w, h = cv2.boundingRect(cnt)
+            
+            # Scale the bounding box coordinates to the original image size
+            x = int(x * scale_x)
+            y = int(y * scale_y)
+            w = int(w * scale_x)
+            h = int(h * scale_y)
             
             # Ensure the rectangle is visible and within the image bounds
             cv2.rectangle(image_np, (x, y), (x + w, y + h), color=(255, 0, 0), thickness=2)
