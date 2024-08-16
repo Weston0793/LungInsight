@@ -120,8 +120,8 @@ def overlay_rectangles(image, cam):
             # Get the bounding box of the contour
             x, y, w, h = cv2.boundingRect(cnt)
             
-            # Debugging: print the raw bounding box values
-            print(f"Raw bounding box - x: {x}, y: {y}, w: {w}, h: {h}")
+            # Debugging: log the raw bounding box values
+            st.write(f"Raw bounding box - x: {x}, y: {y}, w: {w}, h: {h}")
             
             # Scale bounding box to original image size
             x = int((x + origin_x) * scale_x)
@@ -129,8 +129,8 @@ def overlay_rectangles(image, cam):
             w = int(w * scale_x)
             h = int(h * scale_y)
             
-            # Debugging: print the scaled bounding box values
-            print(f"Scaled bounding box - x: {x}, y: {y}, w: {w}, h: {h}")
+            # Debugging: log the scaled bounding box values
+            st.write(f"Scaled bounding box - x: {x}, y: {y}, w: {w}, h: {h}")
             
             # Check if the bounding box exceeds the allowed area
             if w * h > max_area:
@@ -142,8 +142,8 @@ def overlay_rectangles(image, cam):
             x = min(max(x, 0), original_width - w)
             y = min(max(y, 0), original_height - h)
             
-            # Debugging: print the final bounding box values
-            print(f"Final bounding box - x: {x}, y: {y}, w: {w}, h: {h}")
+            # Debugging: log the final bounding box values
+            st.write(f"Final bounding box - x: {x}, y: {y}, w: {w}, h: {h}")
             
             # Draw the rectangle on the image
             cv2.rectangle(image_np, (x, y), (x + w, y + h), color=(255, 0, 0), thickness=2)
