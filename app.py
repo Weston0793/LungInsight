@@ -85,50 +85,79 @@ def get_cam(model, img_tensor, target_layer_name):
     
     return cam
 
+import streamlit as st
+
 def overlay_rectangles(image, cam):
     # Convert the original image to a numpy array
     image_np = np.array(image)
     original_height, original_width = image_np.shape[:2]
     
-    # Resize the CAM to the original image dimensions to ensure proper scaling
-    cam_resized = cv2.resize(cam, (original_width, original_height))
-    cam_image = np.uint8(255 * cam_resized)
+    # Scale CAM to [0, 255] range
+    cam_image = np.uint8(255 * cam)
     
     # Split the CAM into left and right halves
     midline = cam_image.shape[1] // 2
     cam_left = cam_image[:, :midline]
     cam_right = cam_image[:, midline:]
     
-    def find_bounding_box(cam_half, origin_x):
+    # Function to process a CAM half and draw rectangles on the original image
+    def process_and_draw(cam_half, origin_x):
         # Threshold to isolate the lowest activation points
-        _, thresh = cv2.threshold(cam_half, 200, 255, cv2.THRESH_BINARY_INV)
+        _, thresh = cv2.threshold(cam_half, 0, 50, cv2.THRESH_BINARY_INV)
         
-        # Find contours of the thresholded image
+        # Find contours in the thresholded image
         contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         
-        # Sort contours by area (smallest first to capture least activation points)
-        sorted_contours = sorted(contours, key=cv2.contourArea)
+        # Sort contours by area in descending order (largest first)
+        sorted_contours = sorted(contours, key=cv2.contourArea, reverse=True)
         
+        # Calculate scaling factors to map CAM coordinates to original image size
+        scale_x = original_width / cam_image.shape[1]
+        scale_y = original_height / cam_image.shape[0]
+        
+        # Define max area for bounding boxes (30% of the original image area)
         max_area = 0.3 * original_width * original_height
+        
         for cnt in sorted_contours:
+            # Get the bounding box of the contour
             x, y, w, h = cv2.boundingRect(cnt)
             
-            # Scale bounding box coordinates back to the original image size
-            x = int((x + origin_x))
-            y = int(y)
-            w = int(w)
-            h = int(h)
+            # Debugging: log the raw bounding box values
+            st.write(f"Raw bounding box - x: {x}, y: {y}, w: {w}, h: {h}")
             
-            if w * h <= max_area:
-                # Draw the rectangle on the original image
-                cv2.rectangle(image_np, (x, y), (x + w, y + h), color=(255, 0, 0), thickness=2)
-                break
+            # Scale bounding box to original image size
+            x = int((x + origin_x) * scale_x)
+            y = int(y * scale_y)
+            w = int(w * scale_x)
+            h = int(h * scale_y)
+            
+            # Debugging: log the scaled bounding box values
+            st.write(f"Scaled bounding box - x: {x}, y: {y}, w: {w}, h: {h}")
+            
+            # Check if the bounding box exceeds the allowed area
+            if w * h > max_area:
+                scale_factor = (max_area / (w * h)) ** 0.5
+                w = int(w * scale_factor)
+                h = int(h * scale_factor)
+            
+            # Ensure bounding box stays within the image bounds
+            x = min(max(x, 0), original_width - w)
+            y = min(max(y, 0), original_height - h)
+            
+            # Debugging: log the final bounding box values
+            st.write(f"Final bounding box - x: {x}, y: {y}, w: {w}, h: {h}")
+            
+            # Draw the rectangle on the image
+            cv2.rectangle(image_np, (x, y), (x + w, y + h), color=(255, 0, 0), thickness=2)
+            
+            # Stop after drawing the first valid rectangle
+            break
     
-    # Analyze and draw bounding boxes for left and right halves
-    find_bounding_box(cam_left, origin_x=0)             # Process left half
-    find_bounding_box(cam_right, origin_x=midline)      # Process right half
+    # Process and draw rectangles on the left and right halves
+    process_and_draw(cam_left, origin_x=0)            # Process left half
+    process_and_draw(cam_right, origin_x=midline)     # Process right half
     
-    # Return the image with bounding boxes as a PIL image
+    # Convert numpy array back to PIL image and return
     return Image.fromarray(image_np)
 
 # Streamlit App
