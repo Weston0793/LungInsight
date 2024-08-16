@@ -90,8 +90,9 @@ def overlay_rectangles(image, cam):
     image_np = np.array(image)
     original_height, original_width = image_np.shape[:2]
     
-    # Scale CAM to [0, 255] range
-    cam_image = np.uint8(255 * cam)
+    # Resize the CAM to match the original image size
+    cam_resized = cv2.resize(cam, (original_width, original_height))
+    cam_image = np.uint8(255 * cam_resized)
     
     # Split the CAM into left and right halves
     midline = cam_image.shape[1] // 2
@@ -109,10 +110,6 @@ def overlay_rectangles(image, cam):
         # Sort contours by area in descending order (largest first)
         sorted_contours = sorted(contours, key=cv2.contourArea, reverse=True)
         
-        # Calculate scaling factors to map CAM coordinates to original image size
-        scale_x = original_width / cam_image.shape[1]
-        scale_y = original_height / cam_image.shape[0]
-        
         # Define max area for bounding boxes (30% of the original image area)
         max_area = 0.3 * original_width * original_height
         
@@ -123,14 +120,8 @@ def overlay_rectangles(image, cam):
             # Debugging: log the raw bounding box values
             st.write(f"Raw bounding box - x: {x}, y: {y}, w: {w}, h: {h}")
             
-            # Scale bounding box to original image size
-            x = int((x + origin_x) * scale_x)
-            y = int(y * scale_y)
-            w = int(w * scale_x)
-            h = int(h * scale_y)
-            
-            # Debugging: log the scaled bounding box values
-            st.write(f"Scaled bounding box - x: {x}, y: {y}, w: {w}, h: {h}")
+            # Translate the bounding box according to the origin
+            x += origin_x
             
             # Check if the bounding box exceeds the allowed area
             if w * h > max_area:
@@ -145,9 +136,6 @@ def overlay_rectangles(image, cam):
             # Debugging: log the final bounding box values
             st.write(f"Final bounding box - x: {x}, y: {y}, w: {w}, h: {h}")
             
-            # Directly draw on the CAM image for verification
-            cv2.rectangle(cam_half, (x - origin_x, y), (x - origin_x + w, y + h), color=(255, 0, 0), thickness=2)
-            
             # Draw the rectangle on the original image
             cv2.rectangle(image_np, (x, y), (x + w, y + h), color=(255, 0, 0), thickness=2)
             
@@ -160,7 +148,7 @@ def overlay_rectangles(image, cam):
     
     # Convert numpy array back to PIL image and return
     return Image.fromarray(image_np)
-    
+
 # Streamlit App
 st.title("Medical Image Classification")
 st.write("Upload an X-ray image and get the prediction with confidence levels.")
@@ -176,7 +164,7 @@ if uploaded_file is not None:
     image_clahe = apply_clahe(image)
 
     transform = transforms.Compose([
-        transforms.Resize((300, 300)),
+        transforms.Resize((300, 300)),  # Keep this to match the model input size
         transforms.ToTensor()
     ])
 
@@ -215,17 +203,17 @@ if uploaded_file is not None:
     cam_v3s = get_cam(model_v3s, image_tensor, target_layer_name='base_model.features.12')
     combined_cam = (cam_v2 + cam_v3s) / 2
 
-    # Overlay hexagons on the original image
-    image_with_hexagons = overlay_rectangles(image, combined_cam)
+    # Overlay rectangles on the original image
+    image_with_rectangles = overlay_rectangles(image, combined_cam)
     
     # Create a heatmap of the combined CAM
     heatmap = cv2.applyColorMap(np.uint8(255 * (1-combined_cam)), cv2.COLORMAP_JET)
     heatmap = np.float32(heatmap) / 255
-    image_np = np.array(image.resize((300, 300)))
+    image_np = np.array(image.resize((300, 300)))  # Resize image for the CAM overlay
     image_np = np.float32(image_np) / 255
     cam_overlay = heatmap + np.expand_dims(image_np, axis=2)
     cam_overlay = cam_overlay / np.max(cam_overlay)
     cam_overlay_image = Image.fromarray(np.uint8(255 * cam_overlay))
 
-    st.image(image_with_hexagons, caption='Image with highlighted regions.', use_column_width=True)
+    st.image(image_with_rectangles, caption='Image with highlighted regions.', use_column_width=True)
     st.image(cam_overlay_image, caption='Stacked CAM overlay.', use_column_width=True)
