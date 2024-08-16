@@ -145,7 +145,10 @@ def overlay_rectangles(image, cam):
             # Debugging: log the final bounding box values
             st.write(f"Final bounding box - x: {x}, y: {y}, w: {w}, h: {h}")
             
-            # Draw the rectangle on the image
+            # Directly draw on the CAM image for verification
+            cv2.rectangle(cam_half, (x - origin_x, y), (x - origin_x + w, y + h), color=(255, 0, 0), thickness=2)
+            
+            # Draw the rectangle on the original image
             cv2.rectangle(image_np, (x, y), (x + w, y + h), color=(255, 0, 0), thickness=2)
             
             # Stop after drawing the first valid rectangle
