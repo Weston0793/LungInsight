@@ -101,7 +101,7 @@ def overlay_rectangles(image, cam):
     
     def find_bounding_box(cam_half, origin_x):
         # Threshold to isolate the lowest activation points
-        _, thresh = cv2.threshold(cam_half, 0, 50, cv2.THRESH_BINARY_INV)
+        _, thresh = cv2.threshold(cam_half, 200, 255, cv2.THRESH_BINARY_INV)
         
         # Find contours of the thresholded image
         contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
