@@ -197,7 +197,7 @@ if uploaded_file is not None:
     combined_cam = (cam_v2 + cam_v3s) / 2
 
     # Overlay hexagons on the original image
-    image_with_hexagons = overlay_hexagons(image, combined_cam)
+    image_with_hexagons = overlay_rectangles(image, combined_cam)
     
     # Create a heatmap of the combined CAM
     heatmap = cv2.applyColorMap(np.uint8(255 * (1-combined_cam)), cv2.COLORMAP_JET)
