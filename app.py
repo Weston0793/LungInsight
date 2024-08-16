@@ -95,6 +95,9 @@ def overlay_rectangles(image, cam):
     # Find contours from the thresholded image
     contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     
+    # Sort contours by area in descending order (largest first)
+    sorted_contours = sorted(contours, key=cv2.contourArea, reverse=True)
+    
     # Get dimensions of the original image and the CAM image
     image_np = np.array(image)
     original_height, original_width = image_np.shape[:2]
@@ -107,10 +110,10 @@ def overlay_rectangles(image, cam):
     # Define maximum area for a bounding box to be 30% of the original image area
     max_area = 0.3 * original_width * original_height
     
-    # Separate contours into left and right halves based on x-coordinate
+    # Separate contours into left and right halves based on the bounding box's position relative to the midline
     midline = cam_width // 2
-    left_contours = [cnt for cnt in contours if cv2.boundingRect(cnt)[0] + cv2.boundingRect(cnt)[2] // 2 < midline]
-    right_contours = [cnt for cnt in contours if cv2.boundingRect(cnt)[0] + cv2.boundingRect(cnt)[2] // 2 >= midline]
+    left_contours = [cnt for cnt in sorted_contours if cv2.boundingRect(cnt)[0] < midline]
+    right_contours = [cnt for cnt in sorted_contours if cv2.boundingRect(cnt)[0] >= midline]
     
     # Function to process contours and draw bounding boxes
     def process_contours(contours, side):
@@ -127,7 +130,8 @@ def overlay_rectangles(image, cam):
             # Check if the bounding box area is within the allowed limit
             if w * h <= max_area:
                 cv2.rectangle(image_np, (x, y), (x + w, y + h), color=(255, 0, 0), thickness=2)
-                break  # Stop after the first valid rectangle is found
+                # Comment out break to allow multiple rectangles to be drawn per side
+                # break
     
     # Process left and right halves separately
     process_contours(left_contours, "left")
