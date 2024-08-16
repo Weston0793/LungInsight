@@ -135,7 +135,6 @@ def overlay_rectangles(image, cam):
     
     # Convert numpy array back to PIL image
     return Image.fromarray(image_np)
-
     
 # Streamlit App
 st.title("Medical Image Classification")
