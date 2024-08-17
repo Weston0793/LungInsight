@@ -52,7 +52,7 @@ def overlay_rectangles(image, cam):
         scale_x = original_width / cam_half.shape[1]
         scale_y = original_height / cam_half.shape[0]
         
-        # Define max area for bounding boxes (15% of the original image area)
+        # Define max area for bounding boxes (20% of the original image area)
         max_area = 0.20 * original_width * original_height
         
         for cnt in sorted_contours:
@@ -65,7 +65,7 @@ def overlay_rectangles(image, cam):
             # Scale bounding box to original image size
             x = int((x + origin_x) * scale_x)
             y = int(y * scale_y)
-            w = int((w + origin_x) * scale_x)
+            w = int((w * scale_x+ origin_x)
             h = int(h * scale_y)
             
             # Debugging: log the scaled bounding box values
@@ -73,7 +73,7 @@ def overlay_rectangles(image, cam):
             
             # Check if the bounding box exceeds the allowed area
             if w * h > max_area:
-                scale_factor = (max_area / (w * h)) ** 0.8
+                scale_factor = (max_area / (w * h)) ** 0.9
                 w = int(w * scale_factor)
                 h = int(h * scale_factor)
             
