@@ -29,6 +29,7 @@ def overlay_rectangles(image, cam):
     original_height, original_width = image_np.shape[:2]
     original_width = original_width /2
     # Scale CAM to [0, 255] range
+    cam = cv.cvtColor(cam, cv.COLOR_BGR2GRAY)
     cam_image = np.uint8(255 * cam)
     
     # Split the CAM into left and right halves
@@ -52,7 +53,7 @@ def overlay_rectangles(image, cam):
         scale_y = original_height / cam_half.shape[0]
         
         # Define max area for bounding boxes (15% of the original image area)
-        max_area = 0.15 * original_width * original_height
+        max_area = 0.20 * original_width * original_height
         
         for cnt in sorted_contours:
             # Get the bounding box of the contour
@@ -88,7 +89,6 @@ def overlay_rectangles(image, cam):
             
             # Stop after drawing the first valid rectangle
             break
-
     
     # Process and draw rectangles on the left and right halves
     process_and_draw(cam_left, origin_x=0)            # Process left half
