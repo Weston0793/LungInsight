@@ -1,4 +1,5 @@
 import numpy as np
+import operator
 
 def find_largest_similar_rectangle(heatmap, origin_x, origin_y, threshold=0.4):
     """
