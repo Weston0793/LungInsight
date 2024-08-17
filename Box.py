@@ -3,7 +3,7 @@ import operator
 import cv2
 from PIL import Image
 
-def find_largest_similar_rectangle(heatmap, origin_x, origin_y, threshold=0.4):
+def find_largest_similar_rectangle(heatmap, origin_x, origin_y, threshold=0.5):
     """
     Finds the largest rectangle around the origin point that contains similarly
     highly activated points, moving up, down, left, and right from the origin.
