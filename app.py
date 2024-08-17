@@ -70,7 +70,7 @@ def overlay_ellipses(image, cam):
         cam_image = np.uint8(255 * cam_resized)
         
         # Threshold to isolate the lowest activation points
-        _, thresh = cv2.threshold(cam_image, 200, 255, cv2.THRESH_BINARY_INV)
+        _, thresh = cv2.threshold(cam_image, 0, 50, cv2.THRESH_BINARY_INV)
         
         # Find contours in the thresholded image
         contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
