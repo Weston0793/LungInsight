@@ -6,6 +6,7 @@ import numpy as np
 from torchvision import models
 import torch.nn as nn
 import torch.nn.functional as F
+import cv
 import cv2
 from Models import MultiClassMobileNetV2, MultiClassMobileNetV3Small
 from CAM import get_cam
