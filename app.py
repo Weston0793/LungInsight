@@ -27,7 +27,7 @@ def overlay_rectangles(image, cam):
     # Convert the original image to a numpy array
     image_np = np.array(image)
     original_height, original_width = image_np.shape[:2]
-    original_width = original_width /2
+    
     # Scale CAM to [0, 255] range
     cam_image = np.uint8(255 * cam)
     
@@ -36,10 +36,13 @@ def overlay_rectangles(image, cam):
     cam_left = cam_image[:, :midline]
     cam_right = cam_image[:, midline:]
     
+    # Debugging: Display CAM sizes
+    st.write(f"CAM left shape: {cam_left.shape}, CAM right shape: {cam_right.shape}")
+    
     # Function to process a CAM half and draw rectangles on the original image
     def process_and_draw(cam_half, origin_x):
         # Threshold to isolate the lowest activation points
-        _, thresh = cv2.threshold(cam_half, 0, 50, cv2.THRESH_BINARY_INV)
+        _, thresh = cv2.threshold(cam_half, 200, 255, cv2.THRESH_BINARY_INV)
         
         # Find contours in the thresholded image
         contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -88,7 +91,6 @@ def overlay_rectangles(image, cam):
             
             # Stop after drawing the first valid rectangle
             break
-
     
     # Process and draw rectangles on the left and right halves
     process_and_draw(cam_left, origin_x=0)            # Process left half
@@ -96,6 +98,30 @@ def overlay_rectangles(image, cam):
     
     # Convert numpy array back to PIL image and return
     return Image.fromarray(image_np)
+
+# New function to display the fourth visualization with CAM and bounding boxes
+def overlay_cam_and_rectangles(image, cam):
+    # Convert image to numpy array
+    image_np = np.array(image)
+    original_height, original_width = image_np.shape[:2]
+    
+    # Resize CAM to match original image size
+    cam_resized = cv2.resize(cam, (original_width, original_height))
+    
+    # Apply color map to CAM
+    heatmap = cv2.applyColorMap(np.uint8(255 * (1-cam_resized)), cv2.COLORMAP_JET)
+    
+    # Combine CAM overlay with the original image
+    cam_overlay = np.float32(heatmap) / 255 + np.float32(image_np) / 255
+    cam_overlay = cam_overlay / np.max(cam_overlay)
+    
+    # Convert back to PIL image
+    cam_overlay_image = Image.fromarray(np.uint8(255 * cam_overlay))
+    
+    # Draw the rectangles on the combined image
+    image_with_rectangles = overlay_rectangles(cam_overlay_image, cam)
+    
+    return image_with_rectangles
 
 # Streamlit App
 st.title("LungInsight for X-ray Classification")
@@ -155,14 +181,6 @@ if uploaded_file is not None:
     image_with_rectangles = overlay_rectangles(image, combined_cam)
     st.image(image_with_rectangles, caption='Image with highlighted regions.', use_column_width=True)
     
-    # Create a heatmap of the combined CAM
-    heatmap = cv2.applyColorMap(np.uint8(255 * (1-combined_cam)), cv2.COLORMAP_JET)
-    heatmap = np.float32(heatmap) / 255
-    image_np = np.array(image.resize((300, 300)))  # Resize image for the CAM overlay
-    image_np = np.float32(image_np) / 255
-    cam_overlay = heatmap + np.expand_dims(image_np, axis=2)
-    cam_overlay = cam_overlay / np.max(cam_overlay)
-    cam_overlay_image = Image.fromarray(np.uint8(255 * cam_overlay))
-
-
-    st.image(cam_overlay_image, caption='Stacked CAM overlay.', use_column_width=True)
+    # Overlay CAM with bounding boxes for debugging
+    cam_overlay_with_rectangles = overlay_cam_and_rectangles(image, combined_cam)
+    st.image(cam_overlay_with_rectangles, caption='CAM overlay with bounding boxes.', use_column_width=True)
