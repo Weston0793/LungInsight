@@ -30,7 +30,7 @@ def overlay_rectangles(image, cam):
     st.write(f" original_height:{original_height}, original_width: {original_width}")
     original_width = original_width /2
     # Scale CAM to [0, 255] range
-    cam_image = np.uint8(255 * cam)
+    cam_image = np.uint8(255 * (1-cam))
     st.write(f" original_height:{original_height}, half_width: {original_width}")
     # Split the CAM into left and right halves
     midline = cam_image.shape[1] // 2
@@ -40,7 +40,7 @@ def overlay_rectangles(image, cam):
     # Function to process a CAM half and draw rectangles on the original image
     def process_and_draw(cam_half, origin_x):
         # Threshold to isolate the lowest activation points
-        _, thresh = cv2.threshold(cam_half, 150, 255, cv2.THRESH_BINARY_INV)
+        _, thresh = cv2.threshold(cam_half, 210, 255, cv2.THRESH_BINARY_INV)
         
         # Find contours in the thresholded image
         contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
