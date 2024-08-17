@@ -80,8 +80,8 @@ def overlay_rectangles(image, cam):
             center_y_scaled = int(center_y * scale_y)
             
             # Adjust bounding box based on new center (for more accurate scaling)
-            x_scaled = center_x_scaled - w_scaled // 2
-            y_scaled = center_y_scaled - h_scaled // 2
+            x_scaled = center_x_scaled - w_scaled // 1.95
+            y_scaled = center_y_scaled - h_scaled // 1.95
             # Debugging: log the scaled bounding box values
             st.write(f"Final bounding box - x: {x_scaled}, y: {y_scaled}, w: {w_scaled}, h: {h_scaled}")
             # Check if the bounding box exceeds the allowed area
@@ -96,7 +96,7 @@ def overlay_rectangles(image, cam):
                 continue  # Skip this bounding box if out of bounds
             
             # Draw the rectangle on the image, ensuring all coordinates are integers
-            cv2.rectangle(image_np, (int(x_scaled), int(y_scaled)), (int(x_scaled + w_scaled*2), int(y_scaled + h_scaled*2)), color=(255, 0, 0), thickness=2)
+            cv2.rectangle(image_np, (int(x_scaled), int(y_scaled)), (int(x_scaled + w_scaled*1.2), int(y_scaled + h_scaled*1.2)), color=(255, 0, 0), thickness=2)
             # Debugging: log the final bounding box values
             st.write(f"Final bounding box - x: {x_scaled}, y: {y_scaled}, w: {w_scaled}, h: {h_scaled}")
             # Stop after drawing the first valid rectangle
