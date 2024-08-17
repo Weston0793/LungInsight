@@ -102,10 +102,10 @@ def overlay_rectangles(image, heatmap):
     
     # Calculate the amount by which to shift the rectangles
     shift_amount = original_width // 7.5  # Example: 10% of the image width if 10
-    
+    shift_amount2 = original_width // 10
     # Process and draw rectangles on the left and right halves
     process_and_draw(heatmap_left, origin_x=0, shift_amount=shift_amount)  # Shift left half to the right
-    process_and_draw(heatmap_right, origin_x=midline * original_width // cms, shift_amount=shift_amount)  # Shift right half to the right
+    process_and_draw(heatmap_right, origin_x=midline * original_width // cms, shift_amount=shift_amount2)  # Shift right half to the right
     
     # Convert numpy array back to PIL image and return
     return Image.fromarray(image_np)
