@@ -118,7 +118,7 @@ uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png
 
 if uploaded_file is not None:
     image = Image.open(uploaded_file).convert('L')
-    st.image(image, caption='Uploaded Image.', use_column_width=True)
+    #st.image(image, caption='Uploaded Image.', use_column_width=True)
     st.write("")
     st.write("Classifying...")
 
@@ -170,7 +170,7 @@ if uploaded_file is not None:
     # Generate the heatmap
     heatmap = cv2.applyColorMap(np.uint8(255 * (1 - cam_upscaled)), cv2.COLORMAP_JET)
     heatmap = np.float32(heatmap) / 255
-    st.image(heatmap, caption='Heatmap', use_column_width=True)
+    # st.image(heatmap, caption='Heatmap', use_column_width=True)
 
     # Overlay rectangles on the original image using heatmap analysis
     image_with_rectangles = overlay_rectangles(image, combined_cam)
