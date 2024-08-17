@@ -170,6 +170,7 @@ if uploaded_file is not None:
     # Create a heatmap of the combined CAM
     heatmap = cv2.applyColorMap(np.uint8(255 * (1-combined_cam)), cv2.COLORMAP_JET)
     heatmap = np.float32(heatmap) / 255
+    st.image(heatmap, caption='heatmap .', use_column_width=True)
     image_np = np.array(image.resize((300, 300)))  # Resize image for the CAM overlay
     image_np = np.float32(image_np) / 255
     cam_overlay = heatmap + np.expand_dims(image_np, axis=2)
