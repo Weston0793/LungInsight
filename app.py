@@ -95,7 +95,7 @@ def overlay_rectangles(image, heatmap):
         y2 = bottom * (original_height // cms)
         
         # Shift the rectangle to the right by twice the amount as the original position
-        shift = 1.5 * (x2 - x1)
+        shift = 2 * (x2 - x1)
         x1_shifted = x1 + shift_factor * shift
         x2_shifted = x2 + shift_factor * shift
         
@@ -103,8 +103,8 @@ def overlay_rectangles(image, heatmap):
         cv2.rectangle(image_np, (x1_shifted, y1), (x2_shifted, y2), color=(255, 0, 0), thickness=2)
     
     # Process and draw rectangles on the left and right halves
-    process_and_draw(heatmap_left, origin_x=0, shift_factor=1)  # Shift left half to the right
-    process_and_draw(heatmap_right, origin_x=midline * original_width // cms, shift_factor=1)  # Shift right half further to the right
+    process_and_draw(heatmap_left, origin_x=0, shift_factor=0.75)  # Shift left half to the right
+    process_and_draw(heatmap_right, origin_x=midline * original_width // cms, shift_factor=0.75)  # Shift right half further to the right
     
     # Convert numpy array back to PIL image and return
     return Image.fromarray(image_np)
