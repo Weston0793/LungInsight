@@ -53,7 +53,7 @@ def overlay_rectangles(image, cam):
         scale_y = original_height / cam_half.shape[0]
         
         # Define max area for bounding boxes (20% of the original image area)
-        max_area = 0.20 * original_width * original_height
+        max_area = 0.40 * original_width * original_height
         
         for cnt in sorted_contours:
             # Get the bounding box of the contour
