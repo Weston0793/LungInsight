@@ -89,9 +89,9 @@ def overlay_rectangles(image, heatmap):
         left, top, right, bottom = find_largest_similar_rectangle(heatmap_half, x_index, y_index)
         
         # Convert coordinates to original image space
-        x1 = origin_x + left * (original_width // (2 * cms))
+        x1 = origin_x + left * (original_width // cms)
         y1 = top * (original_height // cms)
-        x2 = origin_x + right * (original_width // (2 * cms))
+        x2 = origin_x + right * (original_width //  cms)
         y2 = bottom * (original_height // cms)
         
         # Shift the rectangle to the right by the specified shift amount
