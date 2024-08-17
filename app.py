@@ -24,7 +24,7 @@ model_v3s.load_state_dict(torch.load('bucket/MobileNetV3Small_1.pth', map_locati
 model_v2.eval()
 model_v3s.eval()
 
-def overlay_rotated_rectangle(image, heatmap):
+def overlay_rectangles(image, heatmap):
     # Convert the original image to a numpy array
     image_np = np.array(image)
     original_height, original_width = image_np.shape[:2]
@@ -36,47 +36,36 @@ def overlay_rotated_rectangle(image, heatmap):
     
     # Scaling factors for the original image dimensions
     cms = heatmap.shape[0]  # The heatmap is assumed to be square
-    max_area = 0.3 * (original_width // 2) * original_height  # 30% of half image
     
     def process_and_draw(heatmap_half, origin_x):
         # Since heatmap_half is already a NumPy array, no need to convert
         heatmap_np = heatmap_half
         
-        # Threshold to isolate the highest activation points
-        _, thresh = cv2.threshold(heatmap_np, np.max(heatmap_np) * 0.7, 255, cv2.THRESH_BINARY)
-        thresh = np.uint8(thresh)
+        # Find the maximum value and its index in each row
+        val = []
+        for i in range(0, heatmap_np.shape[0]):
+            index, value = max(enumerate(heatmap_np[i]), key=operator.itemgetter(1))
+            val.append(value)
         
-        # Find contours in the thresholded heatmap
-        contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        # Find the index of the row with the highest activation
+        y_index, y_value = max(enumerate(val), key=operator.itemgetter(1))
         
-        if contours:
-            # Sort contours by area, descending
-            largest_contour = max(contours, key=cv2.contourArea)
-            
-            # Get the minimum area rectangle around the largest contour
-            rect = cv2.minAreaRect(largest_contour)
-            box = cv2.boxPoints(rect)
-            box = np.int0(box)
-            
-            # Calculate the area of the rectangle
-            width = rect[1][0]
-            height = rect[1][1]
-            rect_area = width * height
-            
-            # Scale down the rectangle if it exceeds the allowed maximum area
-            if rect_area > max_area:
-                scale_factor = (max_area / rect_area) ** 0.5
-                width = int(width * scale_factor)
-                height = int(height * scale_factor)
-                rect = ((rect[0][0], rect[0][1]), (width, height), rect[2])
-                box = cv2.boxPoints(rect)
-                box = np.int0(box)
-            
-            # Adjust the box coordinates to account for the half-image offset
-            box[:, 0] += origin_x
-            
-            # Draw the rotated rectangle on the image
-            cv2.drawContours(image_np, [box], 0, (255, 0, 0), 2)
+        # Find the x index of the highest activation in that row
+        x_index, x_value = max(enumerate(heatmap_np[y_index]), key=operator.itemgetter(1))
+        
+        # Calculate the bounding box in original image coordinates
+        x_ = original_width // (2 * cms)  # Half width as we're working with halves
+        y_ = original_height // cms
+        
+        x = origin_x + x_index * x_
+        y = y_index * y_
+        
+        # Bounding box coordinates (top-left and bottom-right)
+        x1, y1 = x, y
+        x2, y2 = x + x_, y + y_
+        
+        # Draw the rectangle on the image
+        cv2.rectangle(image_np, (x1, y1), (x2, y2), color=(255, 0, 0), thickness=2)
     
     # Process and draw rectangles on the left and right halves
     process_and_draw(heatmap_left, origin_x=0)            # Process left half
@@ -145,7 +134,7 @@ if uploaded_file is not None:
     st.image(heatmap, caption='Heatmap', use_column_width=True)
 
     # Overlay rectangles on the original image using heatmap analysis
-    image_with_rectangles = overlay_rotated_rectangle(image, heatmap)
+    image_with_rectangles = overlay_rectangles(image, heatmap)
     st.image(image_with_rectangles, caption='Image with highlighted regions.', use_column_width=True)
     
     # Create a heatmap-overlayed image
