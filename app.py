@@ -24,7 +24,7 @@ model_v3s.load_state_dict(torch.load('bucket/MobileNetV3Small_1.pth', map_locati
 model_v2.eval()
 model_v3s.eval()
 
-def find_largest_similar_rectangle(heatmap, origin_x, origin_y, threshold=0.4):
+def find_largest_similar_rectangle(heatmap, origin_x, origin_y, threshold=0.3):
     """
     Finds the largest rectangle around the origin point that contains similarly
     highly activated points, moving up, down, left, and right from the origin.
@@ -97,12 +97,13 @@ def overlay_rectangles(image, heatmap):
         # Shift the rectangle to the right by the specified shift amount
         x1_shifted = int(x1 + shift_amount)
         x2_shifted = int(x2 + shift_amount)
-        
+        y1_shifted = int(y1 + shift_amount)
+        y2_shifted = int(y1 + shift_amount)
         # Draw the rectangle on the image
         cv2.rectangle(image_np, (x1_shifted, y1), (x2_shifted, y2), color=(255, 0, 0), thickness=2)
     
     # Calculate the amount by which to shift the rectangles
-    shift_amount = original_width // 7.5  # Example: 10% of the image width
+    shift_amount = original_width // 7.5  # Example: 10% of the image width if 10
     
     # Process and draw rectangles on the left and right halves
     process_and_draw(heatmap_left, origin_x=0, shift_amount=shift_amount)  # Shift left half to the right
