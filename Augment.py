@@ -51,7 +51,7 @@ class RandomInvert:
 data_transforms = transforms.Compose([
     RandomPadding(),
     RandomZoom(),
-    transforms.Resize(300,300),
+    transforms.Resize((300,300)),
     transforms.RandomAffine(degrees=rotate_range, translate=shift_range, scale=scale_range),  
     transforms.RandomHorizontalFlip(),
     transforms.RandomVerticalFlip(),
