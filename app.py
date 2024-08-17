@@ -105,6 +105,10 @@ def overlay_cam_and_rectangles(image, cam):
     image_np = np.array(image)
     original_height, original_width = image_np.shape[:2]
     
+    # Ensure image_np has three channels by stacking if it's single-channel
+    if len(image_np.shape) == 2 or image_np.shape[2] == 1:
+        image_np = np.stack((image_np,) * 3, axis=-1)
+    
     # Resize CAM to match original image size
     cam_resized = cv2.resize(cam, (original_width, original_height))
     
@@ -184,3 +188,4 @@ if uploaded_file is not None:
     # Overlay CAM with bounding boxes for debugging
     cam_overlay_with_rectangles = overlay_cam_and_rectangles(image, combined_cam)
     st.image(cam_overlay_with_rectangles, caption='CAM overlay with bounding boxes.', use_column_width=True)
+
