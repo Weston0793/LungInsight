@@ -23,29 +23,22 @@ model_v3s.load_state_dict(torch.load('bucket/MobileNetV3Small_1.pth', map_locati
 model_v2.eval()
 model_v3s.eval()
 
-import cv2
-import numpy as np
-from PIL import Image
-
 def overlay_rectangles(image, cam):
     # Convert the original image to a numpy array
     image_np = np.array(image)
     original_height, original_width = image_np.shape[:2]
     
-    # Ensure the CAM is in grayscale
-    if len(cam.shape) == 3:  # If CAM is not grayscale, convert it
+    # Ensure CAM is grayscale
+    if len(cam.shape) == 3:
         cam = cv2.cvtColor(cam, cv2.COLOR_BGR2GRAY)
     
     # Scale CAM to [0, 255] range
-    cam_image = np.uint8(255 * (1 - cam))  # Inverting CAM for better visual contrast
+    cam_image = np.uint8(255 * (1 - cam))
     
     # Split the CAM into left and right halves
     midline = cam_image.shape[1] // 2
     cam_left = cam_image[:, :midline]
     cam_right = cam_image[:, midline:]
-    
-    # Scaling factors for the original image dimensions
-    half_width = original_width // 2  # Width of one side of the split image
     
     # Function to process a CAM half and draw rectangles on the original image
     def process_and_draw(cam_half, origin_x):
@@ -59,51 +52,54 @@ def overlay_rectangles(image, cam):
         sorted_contours = sorted(contours, key=cv2.contourArea, reverse=True)
         
         # Calculate scaling factors to map CAM half coordinates to original image size
-        scale_x = half_width / cam_half.shape[1]
+        scale_x = (original_width / 2) / cam_half.shape[1]
         scale_y = original_height / cam_half.shape[0]
         
-        # Define max area for bounding boxes (20% of the original image area)
-        max_area = 0.50 * half_width * original_height
+        # Define max area for bounding boxes (50% of the original image area)
+        max_area = 0.50 * original_width * original_height
         
         for cnt in sorted_contours:
             # Get the bounding box of the contour
             x, y, w, h = cv2.boundingRect(cnt)
             
-            # Calculate the center of the bounding box
-            center_x = x + w // 2
-            center_y = y + h // 2
+            # Debugging: log the raw bounding box values
+            st.write(f"Raw bounding box - x: {x}, y: {y}, w: {w}, h: {h}")
             
-            # Scale bounding box to original image size, including center shift
-            x_scaled = int((x + origin_x) * scale_x)
-            y_scaled = int(y * scale_y)
-            w_scaled = int(w * scale_x)
-            h_scaled = int(h * scale_y)
+            # Scale bounding box to original image size
+            center_x = (x + w / 2) * scale_x + origin_x
+            center_y = (y + h / 2) * scale_y
+            w = int(w * scale_x)
+            h = int(h * scale_y)
             
-            # Calculate new center and shift the bounding box accordingly
-            center_x_scaled = int((center_x + origin_x) * scale_x)
-            center_y_scaled = int(center_y * scale_y)
+            # Calculate new x and y based on the scaled center
+            x = int(center_x - w / 2)
+            y = int(center_y - h / 2)
             
-            # Adjust bounding box based on new center (for more accurate scaling)
-            x_scaled = center_x_scaled - w_scaled // 2
-            y_scaled = center_y_scaled - h_scaled // 2
+            # Debugging: log the scaled bounding box values
+            st.write(f"Scaled bounding box - x: {x}, y: {y}, w: {w}, h: {h}")
             
             # Check if the bounding box exceeds the allowed area
-            if w_scaled * h_scaled > max_area:
-                scale_factor = (max_area / (w_scaled * h_scaled)) ** 0.9
-                w_scaled = int(w_scaled * scale_factor)
-                h_scaled = int(h_scaled * scale_factor)
+            if w * h > max_area:
+                scale_factor = (max_area / (w * h)) ** 0.5
+                w = int(w * scale_factor)
+                h = int(h * scale_factor)
+                x = int(center_x - w / 2)
+                y = int(center_y - h / 2)
             
-            # Error checking for bounds
-            if x_scaled < 0 or y_scaled < 0 or x_scaled + w_scaled > original_width or y_scaled + h_scaled > original_height:
-                print(f"Warning: Bounding box out of bounds: x: {x_scaled}, y: {y_scaled}, w: {w_scaled}, h: {h_scaled}")
-                continue  # Skip this bounding box if out of bounds
+            # Debugging: log the final bounding box values
+            st.write(f"Final bounding box - x: {x}, y: {y}, w: {w}, h: {h}")
             
-            # Draw the rectangle on the image, ensuring all coordinates are integers
-            cv2.rectangle(image_np, (int(x_scaled), int(y_scaled)), (int(x_scaled + w_scaled), int(y_scaled + h_scaled)), color=(255, 0, 0), thickness=2)
+            # Draw the rectangle on the image, ensuring all coordinates are within bounds
+            x = max(0, min(x, original_width - 1))
+            y = max(0, min(y, original_height - 1))
+            w = max(1, min(w, original_width - x))
+            h = max(1, min(h, original_height - y))
+            
+            cv2.rectangle(image_np, (x, y), (x + w, y + h), color=(255, 0, 0), thickness=2)
             
             # Stop after drawing the first valid rectangle
             break
-
+    
     # Process and draw rectangles on the left and right halves
     process_and_draw(cam_left, origin_x=0)            # Process left half
     process_and_draw(cam_right, origin_x=midline)     # Process right half
