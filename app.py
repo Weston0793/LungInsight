@@ -12,6 +12,7 @@ from CAM import get_cam
 from Preprocess import apply_clahe
 import operator
 from Box import find_largest_similar_rectangle, overlay_rectangles
+from Augment import data_transforms 
 
 # Initialize Models
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -44,7 +45,7 @@ if uploaded_file is not None:
         transforms.ToTensor()
     ])
 
-    image_tensor = transform(image_clahe).unsqueeze(0).to(device)
+    image_tensor = data_transforms (image_clahe).unsqueeze(0).to(device)
 
     class_labels = ['Normal', 'TBC', 'Bacteria', 'Virus', 'COVID']
     
