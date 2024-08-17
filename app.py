@@ -29,7 +29,6 @@ def overlay_rectangles(image, cam):
     original_height, original_width = image_np.shape[:2]
     original_width = original_width /2
     # Scale CAM to [0, 255] range
-    cam = cv2.cvtColor(cam, cv2.COLOR_BGR2GRAY)
     cam_image = np.uint8(255 * cam)
     
     # Split the CAM into left and right halves
