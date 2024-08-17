@@ -5,8 +5,7 @@ import torchvision.models as models
 
 # Load Models
 class MultiClassMobileNetV2(nn.Module):
-    def
- __init__(self):
+    def __init__(self):
         super(MultiClassMobileNetV2, self).__init__()
         base_model = models.mobilenet_v2()
         base_model.features[0][0] = nn.Conv2d(1, 32, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)
