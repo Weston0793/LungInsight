@@ -77,10 +77,6 @@ def overlay_rectangles(image, cam):
                 w = int(w * scale_factor)
                 h = int(h * scale_factor)
             
-            # Ensure bounding box stays within the image bounds
-            x = int(min(max(x, 0), original_width - w))
-            y = int(min(max(y, 0), original_height - h))
-            
             # Debugging: log the final bounding box values
             st.write(f"Final bounding box - x: {x}, y: {y}, w: {w}, h: {h}")
             
