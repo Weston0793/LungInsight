@@ -97,8 +97,8 @@ def overlay_rectangles(image, heatmap):
         # Shift the rectangle to the right by the specified shift amount
         x1_shifted = int(x1 + shift_amount)
         x2_shifted = int(x2 + shift_amount)
-        y1_shifted = int(y1 + shift_amount)
-        y2_shifted = int(y2 + shift_amount)
+        y1_shifted = int(y1 + shift_amount/2)
+        y2_shifted = int(y2 + shift_amount/2)
         # Draw the rectangle on the image
         cv2.rectangle(image_np, (x1_shifted, y1_shifted), (x2_shifted, y2_shifted), color=(255, 0, 0), thickness=2)
     
