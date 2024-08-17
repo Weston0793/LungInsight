@@ -96,7 +96,7 @@ def overlay_rectangles(image, cam):
                 continue  # Skip this bounding box if out of bounds
             
             # Draw the rectangle on the image, ensuring all coordinates are integers
-            cv2.rectangle(image_np, (int(x_scaled), int(y_scaled)), (int(x_scaled + w_scaled), int(y_scaled + h_scaled), color=(255, 0, 0), thickness=2)
+            cv2.rectangle(image_np, (int(x_scaled), int(y_scaled)), (int(x_scaled + w_scaled)), (int(y_scaled + h_scaled)), color=(255, 0, 0), thickness=2)
             # Debugging: log the final bounding box values
             st.write(f"Final bounding box - x: {x_scaled}, y: {y_scaled}, w: {w_scaled}, h: {h_scaled}")
             # Stop after drawing the first valid rectangle
