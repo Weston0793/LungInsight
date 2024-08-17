@@ -38,8 +38,8 @@ def overlay_rectangles(image, heatmap):
     cms = heatmap.shape[0]  # The heatmap is assumed to be square
     
     def process_and_draw(heatmap_half, origin_x):
-        # Convert the heatmap to a numpy array
-        heatmap_np = np.array(heatmap_half.cpu())
+        # Since heatmap_half is already a NumPy array, no need to convert
+        heatmap_np = heatmap_half
         
         # Find the maximum value and its index in each row
         val = []
