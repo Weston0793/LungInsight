@@ -69,10 +69,10 @@ if uploaded_file is not None:
     st.write(f"Prediction: **{pred_label}**")
     st.write(f"Confidence: **{confidence:.4f}**")
 
-    # Display the confidence levels for all classes
+    # Display the confidence levels for classes with more than 1% probability, excluding the main prediction
     st.write("Class-wise confidence levels (only showing > 1%):")
     for label, prob in zip(class_labels, stacked_prob):
-        if prob > 0.01:
+        if prob > 0.01 and label != pred_label:
             st.write(f"{label}: {prob:.4f}")
 
     if pred_label == 'Normal lungs':
