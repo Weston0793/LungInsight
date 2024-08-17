@@ -27,10 +27,11 @@ def overlay_rectangles(image, cam):
     # Convert the original image to a numpy array
     image_np = np.array(image)
     original_height, original_width = image_np.shape[:2]
+        st.write(f" original_height:{}, original_width: {original_width}}")
     original_width = original_width /2
     # Scale CAM to [0, 255] range
     cam_image = np.uint8(255 * cam)
-    
+    st.write(f" original_height:{original_height}, original_width: {original_width}}")
     # Split the CAM into left and right halves
     midline = cam_image.shape[1] // 2
     cam_left = cam_image[:, :midline]
@@ -64,7 +65,7 @@ def overlay_rectangles(image, cam):
             # Scale bounding box to original image size
             x = int((x + origin_x) * scale_x)
             y = int(y * scale_y)
-            w = int((w + origin_x * scale_x)
+            w = int((w + origin_x) * scale_x)
             h = int(h * scale_y)
             
             # Debugging: log the scaled bounding box values
