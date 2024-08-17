@@ -95,7 +95,7 @@ def overlay_rectangles(image, heatmap):
         y2 = bottom * (original_height // cms)
         
         # Shift the rectangle to the right by twice the amount as the original position
-        shift = 2 * (x2 - x1)
+        shift = 1.5 * (x2 - x1)
         x1_shifted = x1 + shift_factor * shift
         x2_shifted = x2 + shift_factor * shift
         
