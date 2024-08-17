@@ -102,7 +102,7 @@ def overlay_rectangles(image, heatmap):
         cv2.rectangle(image_np, (x1_shifted, y1), (x2_shifted, y2), color=(255, 0, 0), thickness=2)
     
     # Calculate the amount by which to shift the rectangles
-    shift_amount = original_width // 5  # Example: 10% of the image width
+    shift_amount = original_width // 7.5  # Example: 10% of the image width
     
     # Process and draw rectangles on the left and right halves
     process_and_draw(heatmap_left, origin_x=0, shift_amount=shift_amount)  # Shift left half to the right
