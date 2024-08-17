@@ -1,3 +1,5 @@
+import numpy as np
+
 def find_largest_similar_rectangle(heatmap, origin_x, origin_y, threshold=0.4):
     """
     Finds the largest rectangle around the origin point that contains similarly
