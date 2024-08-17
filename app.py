@@ -65,7 +65,7 @@ def overlay_rectangles(image, cam):
             # Scale bounding box to original image size
             x = int((x + origin_x) * scale_x)
             y = int(y * scale_y)
-            w = int((w * scale_x+ origin_x)
+            w = int(w * scale_x+ origin_x)
             h = int(h * scale_y)
             
             # Debugging: log the scaled bounding box values
