@@ -79,17 +79,22 @@ def overlay_rectangles(image, heatmap):
         x2_shifted = int(x2 + shift_amount_x)
         y2_shifted = int(y2 + shift_amount_y)
         
-        # Draw the rectangle on the image
-        cv2.rectangle(image_np, (x1_shifted, y1_shifted), (x2_shifted, y2_shifted), color=(255, 0, 0), thickness=2)
+        # Draw an ellipse inside the rectangle
+        center_x = (x1_shifted + x2_shifted) // 2
+        center_y = (y1_shifted + y2_shifted) // 2
+        axis_length_x = abs(x2_shifted - x1_shifted) // 2
+        axis_length_y = abs(y2_shifted - y1_shifted) // 2
+        cv2.ellipse(image_np, (center_x, center_y), (axis_length_x, axis_length_y), 0, 0, 360, color=(255, 0, 0), thickness=2)
     
     # Calculate the amount by which to shift the rectangles
     shift_amount_x_left = original_width // 20  # Example: 5% of the image width
     shift_amount_x_right = original_width // 25
     shift_amount_y = original_height // 20  # Shift down by 10% of the image height
     
-    # Process and draw rectangles on the left and right halves
+    # Process and draw ellipses on the left and right halves
     process_and_draw(heatmap_left, origin_x=0, shift_amount_x=shift_amount_x_left, shift_amount_y=shift_amount_y)
     process_and_draw(heatmap_right, origin_x=midline * original_width // cms, shift_amount_x=shift_amount_x_right, shift_amount_y=shift_amount_y)
     
     # Convert numpy array back to PIL image and return
     return Image.fromarray(image_np)
+
