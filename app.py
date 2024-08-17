@@ -32,7 +32,7 @@ def overlay_rectangles(image, cam):
         cam = cv2.cvtColor(cam, cv2.COLOR_BGR2GRAY)
     
     # Scale CAM to [0, 255] range
-    cam_image = np.uint8(255 * cam)  # Inverting CAM for better visual contrast
+    cam_image = np.uint8(255 * -cam)  # Inverting CAM for better visual contrast
     
     # Split the CAM into left and right halves
     midline = cam_image.shape[1] // 2
