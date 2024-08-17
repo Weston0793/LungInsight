@@ -1,6 +1,7 @@
 import numpy as np
 import operator
 import cv2
+from PIL import Image
 
 def find_largest_similar_rectangle(heatmap, origin_x, origin_y, threshold=0.4):
     """
