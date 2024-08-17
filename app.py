@@ -70,7 +70,7 @@ def overlay_rectangles(image, cam):
             center_y = y + h // 2
             
             # Scale bounding box to original image size, including center shift
-            x_scaled = int((x + origin_x) * scale_x)
+            x_scaled = int((x * scale_x)+origin_x)
             y_scaled = int(y * scale_y)
             w_scaled = int(w * scale_x)
             h_scaled = int(h * scale_y)
