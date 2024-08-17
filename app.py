@@ -34,20 +34,14 @@ uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png
 
 if uploaded_file is not None:
     image = Image.open(uploaded_file).convert('L')
-    #st.image(image, caption='Uploaded Image.', use_column_width=True)
     st.write("")
     st.write("Classifying...")
 
     image_clahe = apply_clahe(image)
 
-    transform = transforms.Compose([
-        transforms.Resize((300, 300)),  # Keep this to match the model input size
-        transforms.ToTensor()
-    ])
+    image_tensor = data_transforms(image_clahe).unsqueeze(0).to(device)
 
-    image_tensor = data_transforms (image_clahe).unsqueeze(0).to(device)
-
-    class_labels = ['Normal', 'TBC', 'Bacteria', 'Virus', 'COVID']
+    class_labels = ['Normal lungs', 'TBC', 'Bacterial Pneumonia', 'Viral Pneumonia', 'COVID Pneumonia']
     
     predictions_v2 = []
     predictions_v3s = []
@@ -75,28 +69,37 @@ if uploaded_file is not None:
     st.write(f"Prediction: **{pred_label}**")
     st.write(f"Confidence: **{confidence:.4f}**")
 
-    # Generate CAMs
-    cam_v2 = get_cam(model_v2, image_tensor, target_layer_name='base_model.features.18.2')
-    cam_v3s = get_cam(model_v3s, image_tensor, target_layer_name='base_model.features.12')
-    combined_cam = (cam_v2 + cam_v3s) / 2
+    # Display the confidence levels for all classes
+    st.write("Class-wise confidence levels:")
+    for label, prob in zip(class_labels, stacked_prob):
+        st.write(f"{label}: {prob:.4f}")
 
-    # Upscale CAM to original image size
-    cam_upscaled = cv2.resize(combined_cam, (image.size[0], image.size[1]))
+    if pred_label == 'Normal lungs':
+        # Show only the original image without heatmaps or bounding boxes
+        st.image(image, caption='Original Image (Normal lungs)', use_column_width=True)
+    else:
+        # Generate CAMs
+        cam_v2 = get_cam(model_v2, image_tensor, target_layer_name='base_model.features.18.2')
+        cam_v3s = get_cam(model_v3s, image_tensor, target_layer_name='base_model.features.12')
+        combined_cam = (cam_v2 + cam_v3s) / 2
 
-    # Generate the heatmap
-    heatmap = cv2.applyColorMap(np.uint8(255 * (1 - cam_upscaled)), cv2.COLORMAP_JET)
-    heatmap = np.float32(heatmap) / 255
-    # st.image(heatmap, caption='Heatmap', use_column_width=True)
+        # Upscale CAM to original image size
+        cam_upscaled = cv2.resize(combined_cam, (image.size[0], image.size[1]))
 
-    # Overlay rectangles on the original image using heatmap analysis
-    image_with_rectangles = overlay_rectangles(image, combined_cam)
-    st.image(image_with_rectangles, caption='Image with highlighted regions.', use_column_width=True)
-    
-    # Create a heatmap-overlayed image
-    image_np = np.array(image)  # Use the original image size
-    image_np = np.float32(image_np) / 255
-    cam_overlay = heatmap + np.expand_dims(image_np, axis=2)
-    cam_overlay = cam_overlay / np.max(cam_overlay)
-    cam_overlay_image = Image.fromarray(np.uint8(255 * cam_overlay))
+        # Generate the heatmap
+        heatmap = cv2.applyColorMap(np.uint8(255 * (1 - cam_upscaled)), cv2.COLORMAP_JET)
+        heatmap = np.float32(heatmap) / 255
 
-    st.image(cam_overlay_image, caption='Stacked CAM overlay.', use_column_width=True)
+        # Overlay rectangles on the original image using heatmap analysis
+        image_with_rectangles = overlay_rectangles(image, combined_cam)
+        st.image(image_with_rectangles, caption='Image with highlighted regions.', use_column_width=True)
+        
+        # Create a heatmap-overlayed image
+        image_np = np.array(image)  # Use the original image size
+        image_np = np.float32(image_np) / 255
+        cam_overlay = heatmap + np.expand_dims(image_np, axis=2)
+        cam_overlay = cam_overlay / np.max(cam_overlay)
+        cam_overlay_image = Image.fromarray(np.uint8(255 * cam_overlay))
+
+        st.image(cam_overlay_image, caption='Stacked CAM overlay.', use_column_width=True)
+
