@@ -24,7 +24,7 @@ model_v3s.load_state_dict(torch.load('bucket/MobileNetV3Small_1.pth', map_locati
 model_v2.eval()
 model_v3s.eval()
 
-def find_largest_similar_rectangle(heatmap, origin_x, origin_y, threshold=0.75):
+def find_largest_similar_rectangle(heatmap, origin_x, origin_y, threshold=0.6):
     """
     Finds the largest rectangle around the origin point that contains similarly
     highly activated points, moving up, down, left, and right from the origin.
