@@ -85,7 +85,7 @@ def overlay_rectangles(image, heatmap):
     # Calculate the amount by which to shift the rectangles
     shift_amount_x_left = original_width // 20  # Example: 5% of the image width
     shift_amount_x_right = original_width // 25
-    shift_amount_y = original_height // 10  # Shift down by 10% of the image height
+    shift_amount_y = original_height // 20  # Shift down by 10% of the image height
     
     # Process and draw rectangles on the left and right halves
     process_and_draw(heatmap_left, origin_x=0, shift_amount_x=shift_amount_x_left, shift_amount_y=shift_amount_y)
