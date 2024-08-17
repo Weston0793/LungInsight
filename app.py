@@ -47,9 +47,9 @@ def overlay_rectangles(image, cam):
         # Sort contours by area in descending order (largest first)
         sorted_contours = sorted(contours, key=cv2.contourArea, reverse=True)
         
-        # Calculate scaling factors to map CAM coordinates to original image size
-        scale_x = original_width / cam_image.shape[1]
-        scale_y = original_height / cam_image.shape[0]
+        # Calculate scaling factors to map CAM half coordinates to original image size
+        scale_x = original_width / cam_half.shape[1]
+        scale_y = original_height / cam_half.shape[0]
         
         # Define max area for bounding boxes (15% of the original image area)
         max_area = 0.15 * original_width * original_height
