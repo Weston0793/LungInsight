@@ -2,8 +2,6 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torchvision.models as models
-from torchvision.models.mobilenetv2
-from torchvision.models.mobilenetv3 
 
 # Load Models
 class MultiClassMobileNetV2(nn.Module):
