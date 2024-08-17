@@ -9,6 +9,7 @@ import torch.nn.functional as F
 import cv2
 from Models import MultiClassMobileNetV2, MultiClassMobileNetV3Small
 from CAM import get_cam
+from Preprocess import apply_clahe
 
 # Initialize Models
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -21,12 +22,6 @@ model_v3s.load_state_dict(torch.load('bucket/MobileNetV3Small_1.pth', map_locati
 
 model_v2.eval()
 model_v3s.eval()
-
-# CLAHE function
-def apply_clahe(image):
-    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
-    clahe_image = clahe.apply(np.array(image))
-    return Image.fromarray(clahe_image)
 
 def overlay_rectangles(image, cam):
     # Convert the original image to a numpy array
@@ -102,7 +97,7 @@ def overlay_rectangles(image, cam):
     return Image.fromarray(image_np)
 
 # Streamlit App
-st.title("Medical Image Classification")
+st.title("LungInsight for X-ray Classification")
 st.write("Upload an X-ray image and get the prediction with confidence levels.")
 
 uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
