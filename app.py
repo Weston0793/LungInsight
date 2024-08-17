@@ -45,7 +45,7 @@ def overlay_rectangles(image, cam):
     # Function to process a CAM half and draw rectangles on the original image
     def process_and_draw(cam_half, origin_x):
         # Threshold to isolate the lowest activation points
-        _, thresh = cv2.threshold(cam_half, 230, 255, cv2.THRESH_BINARY_INV)
+        _, thresh = cv2.threshold(cam_half, 240, 255, cv2.THRESH_BINARY_INV)
         
         # Find contours in the thresholded image
         contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -80,8 +80,8 @@ def overlay_rectangles(image, cam):
             center_y_scaled = int(center_y * scale_y)
             
             # Adjust bounding box based on new center (for more accurate scaling)
-            x_scaled = center_x_scaled + w_scaled // 2
-            y_scaled = center_y_scaled + h_scaled // 2
+            x_scaled = center_x_scaled - w_scaled // 2
+            y_scaled = center_y_scaled - h_scaled // 2
             # Debugging: log the scaled bounding box values
             st.write(f"Final bounding box - x: {x_scaled}, y: {y_scaled}, w: {w_scaled}, h: {h_scaled}")
             # Check if the bounding box exceeds the allowed area
