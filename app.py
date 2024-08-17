@@ -91,7 +91,7 @@ def overlay_rectangles(image, heatmap):
         # Convert coordinates to original image space
         x1 = origin_x + left * (original_width // (2 * cms))
         y1 = top * (original_height // cms)
-        x2 = origin_x + right * ((original_width*1.2) // (2 * cms))
+        x2 = origin_x + right * (original_width // (2 * cms))
         y2 = bottom * (original_height // cms)
         
         # Draw the rectangle on the image
