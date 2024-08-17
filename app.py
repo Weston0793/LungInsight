@@ -70,9 +70,10 @@ if uploaded_file is not None:
     st.write(f"Confidence: **{confidence:.4f}**")
 
     # Display the confidence levels for all classes
-    st.write("Class-wise confidence levels:")
+    st.write("Class-wise confidence levels (only showing > 1%):")
     for label, prob in zip(class_labels, stacked_prob):
-        st.write(f"{label}: {prob:.4f}")
+        if prob > 0.01:
+            st.write(f"{label}: {prob:.4f}")
 
     if pred_label == 'Normal lungs':
         # Show only the original image without heatmaps or bounding boxes
