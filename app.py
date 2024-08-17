@@ -80,7 +80,7 @@ def overlay_rectangles(image, cam):
             
             # Check if the bounding box exceeds the allowed area
             if w * h > max_area:
-                scale_factor = (max_area / (w * h)) ** 0.5
+                scale_factor = (max_area / (w * h)) ** 0.9
                 w = int(w * scale_factor)
                 h = int(h * scale_factor)
                 x = int(center_x - w / 2)
