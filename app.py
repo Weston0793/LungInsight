@@ -164,17 +164,20 @@ if uploaded_file is not None:
     cam_v3s = get_cam(model_v3s, image_tensor, target_layer_name='base_model.features.12')
     combined_cam = (cam_v2 + cam_v3s) / 2
 
-    # Generate the heatmap (modify this part if you have a different method to generate heatmaps)
-    heatmap = cv2.applyColorMap(np.uint8(255 * (1-combined_cam)), cv2.COLORMAP_JET)
+    # Upscale CAM to original image size
+    cam_upscaled = cv2.resize(combined_cam, (image.size[0], image.size[1]))
+
+    # Generate the heatmap
+    heatmap = cv2.applyColorMap(np.uint8(255 * (1 - cam_upscaled)), cv2.COLORMAP_JET)
     heatmap = np.float32(heatmap) / 255
     st.image(heatmap, caption='Heatmap', use_column_width=True)
 
     # Overlay rectangles on the original image using heatmap analysis
-    image_with_rectangles = overlay_rectangles(image, combined_cam)
+    image_with_rectangles = overlay_rectangles(image, cam_upscaled)
     st.image(image_with_rectangles, caption='Image with highlighted regions.', use_column_width=True)
     
     # Create a heatmap-overlayed image
-    image_np = np.array(image.resize((300, 300)))  # Resize image for the CAM overlay
+    image_np = np.array(image)  # Use the original image size
     image_np = np.float32(image_np) / 255
     cam_overlay = heatmap + np.expand_dims(image_np, axis=2)
     cam_overlay = cam_overlay / np.max(cam_overlay)
