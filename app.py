@@ -24,6 +24,41 @@ model_v3s.load_state_dict(torch.load('bucket/MobileNetV3Small_1.pth', map_locati
 model_v2.eval()
 model_v3s.eval()
 
+def find_largest_similar_rectangle(heatmap, origin_x, origin_y, threshold=0.9):
+    """
+    Finds the largest rectangle around the origin point that contains similarly
+    highly activated points, moving up, down, left, and right from the origin.
+    """
+    height, width = heatmap.shape
+    origin_value = heatmap[origin_y, origin_x]
+
+    if origin_value < threshold:
+        return origin_x, origin_y, origin_x, origin_y
+
+    # Initialize boundaries of the rectangle
+    left = origin_x
+    right = origin_x
+    top = origin_y
+    bottom = origin_y
+
+    # Expand the rectangle leftwards
+    while left > 0 and heatmap[origin_y, left - 1] >= origin_value * threshold:
+        left -= 1
+
+    # Expand the rectangle rightwards
+    while right < width - 1 and heatmap[origin_y, right + 1] >= origin_value * threshold:
+        right += 1
+
+    # Expand the rectangle upwards
+    while top > 0 and heatmap[top - 1, origin_x] >= origin_value * threshold:
+        top -= 1
+
+    # Expand the rectangle downwards
+    while bottom < height - 1 and heatmap[bottom + 1, origin_x] >= origin_value * threshold:
+        bottom += 1
+
+    return left, top, right, bottom
+
 def overlay_rectangles(image, heatmap):
     # Convert the original image to a numpy array
     image_np = np.array(image)
@@ -38,31 +73,26 @@ def overlay_rectangles(image, heatmap):
     cms = heatmap.shape[0]  # The heatmap is assumed to be square
     
     def process_and_draw(heatmap_half, origin_x):
-        # Since heatmap_half is already a NumPy array, no need to convert
-        heatmap_np = heatmap_half
-        
         # Find the maximum value and its index in each row
         val = []
-        for i in range(0, heatmap_np.shape[0]):
-            index, value = max(enumerate(heatmap_np[i]), key=operator.itemgetter(1))
+        for i in range(0, heatmap_half.shape[0]):
+            index, value = max(enumerate(heatmap_half[i]), key=operator.itemgetter(1))
             val.append(value)
         
         # Find the index of the row with the highest activation
         y_index, y_value = max(enumerate(val), key=operator.itemgetter(1))
         
         # Find the x index of the highest activation in that row
-        x_index, x_value = max(enumerate(heatmap_np[y_index]), key=operator.itemgetter(1))
+        x_index, x_value = max(enumerate(heatmap_half[y_index]), key=operator.itemgetter(1))
         
-        # Calculate the bounding box in original image coordinates
-        x_ = original_width // (2 * cms)  # Half width as we're working with halves
-        y_ = original_height // cms
+        # Use the new function to find the largest rectangle
+        left, top, right, bottom = find_largest_similar_rectangle(heatmap_half, x_index, y_index)
         
-        x = origin_x + x_index * x_
-        y = y_index * y_
-        
-        # Bounding box coordinates (top-left and bottom-right)
-        x1, y1 = x, y
-        x2, y2 = x + x_, y + y_
+        # Convert coordinates to original image space
+        x1 = origin_x + left * (original_width // (2 * cms))
+        y1 = top * (original_height // cms)
+        x2 = origin_x + right * (original_width // (2 * cms))
+        y2 = bottom * (original_height // cms)
         
         # Draw the rectangle on the image
         cv2.rectangle(image_np, (x1, y1), (x2, y2), color=(255, 0, 0), thickness=2)
