@@ -72,7 +72,7 @@ def overlay_rectangles(image, heatmap):
     # Scaling factors for the original image dimensions
     cms = heatmap.shape[0]  # The heatmap is assumed to be square
     
-    def process_and_draw(heatmap_half, origin_x, shift_amount):
+    def process_and_draw(heatmap_half, origin_x, shift_amount_x, shift_amount_y):
         # Find the maximum value and its index in each row
         val = []
         for i in range(0, heatmap_half.shape[0]):
@@ -94,18 +94,23 @@ def overlay_rectangles(image, heatmap):
         x2 = origin_x + right * (original_width //  cms)
         y2 = bottom * (original_height // cms)
         
-        # Shift the rectangle to the right by the specified shift amount
-        x1_shifted = int(x1 + shift_amount)
-        x2_shifted = int(x2 + shift_amount)
+        # Shift the rectangle horizontally and vertically by the specified shift amounts
+        x1_shifted = int(x1 + shift_amount_x)
+        y1_shifted = int(y1 + shift_amount_y)
+        x2_shifted = int(x2 + shift_amount_x)
+        y2_shifted = int(y2 + shift_amount_y)
+        
         # Draw the rectangle on the image
-        cv2.rectangle(image_np, (x1_shifted, y1), (x2_shifted, y2), color=(255, 0, 0), thickness=2)
+        cv2.rectangle(image_np, (x1_shifted, y1_shifted), (x2_shifted, y2_shifted), color=(255, 0, 0), thickness=2)
     
     # Calculate the amount by which to shift the rectangles
-    shift_amount = original_width // 20  # Example: 10% of the image width if 10
-    shift_amount2 = original_width // 25
+    shift_amount_x_left = original_width // 20  # Example: 5% of the image width
+    shift_amount_x_right = original_width // 25
+    shift_amount_y = original_height // 10  # Shift down by 10% of the image height
+    
     # Process and draw rectangles on the left and right halves
-    process_and_draw(heatmap_left, origin_x=0, shift_amount=shift_amount)  # Shift left half to the right
-    process_and_draw(heatmap_right, origin_x=midline * original_width // cms, shift_amount=shift_amount2)  # Shift right half to the right
+    process_and_draw(heatmap_left, origin_x=0, shift_amount_x=shift_amount_x_left, shift_amount_y=shift_amount_y)
+    process_and_draw(heatmap_right, origin_x=midline * original_width // cms, shift_amount_x=shift_amount_x_right, shift_amount_y=shift_amount_y)
     
     # Convert numpy array back to PIL image and return
     return Image.fromarray(image_np)
