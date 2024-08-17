@@ -145,7 +145,7 @@ if uploaded_file is not None:
     st.image(heatmap, caption='Heatmap', use_column_width=True)
 
     # Overlay rectangles on the original image using heatmap analysis
-    image_with_rectangles = overlay_rectangles(image, combined_cam)
+    image_with_rectangles = overlay_rotated_rectangle(image, heatmap)
     st.image(image_with_rectangles, caption='Image with highlighted regions.', use_column_width=True)
     
     # Create a heatmap-overlayed image
