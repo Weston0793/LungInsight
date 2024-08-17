@@ -77,17 +77,18 @@ def overlay_rectangles(image, cam):
                 h = int(h * scale_factor)
             
             # Ensure bounding box stays within the image bounds
-            x = min(max(x, 0), original_width - w)
-            y = min(max(y, 0), original_height - h)
+            x = int(min(max(x, 0), original_width - w))
+            y = int(min(max(y, 0), original_height - h))
             
             # Debugging: log the final bounding box values
             st.write(f"Final bounding box - x: {x}, y: {y}, w: {w}, h: {h}")
             
-            # Draw the rectangle on the image
-            cv2.rectangle(image_np, (x, y), (x + w, y + h), color=(255, 0, 0), thickness=2)
+            # Draw the rectangle on the image, ensuring all coordinates are integers
+            cv2.rectangle(image_np, (int(x), int(y)), (int(x + w), int(y + h)), color=(255, 0, 0), thickness=2)
             
             # Stop after drawing the first valid rectangle
             break
+
     
     # Process and draw rectangles on the left and right halves
     process_and_draw(cam_left, origin_x=0)            # Process left half
