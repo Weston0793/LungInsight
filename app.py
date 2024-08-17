@@ -27,7 +27,7 @@ def overlay_rectangles(image, cam):
     # Convert the original image to a numpy array
     image_np = np.array(image)
     original_height, original_width = image_np.shape[:2]
-        st.write(f" original_height:{}, original_width: {original_width}}")
+    st.write(f" original_height:{}, original_width: {original_width}}")
     original_width = original_width /2
     # Scale CAM to [0, 255] range
     cam_image = np.uint8(255 * cam)
