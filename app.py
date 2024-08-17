@@ -101,7 +101,7 @@ def overlay_rectangles(image, cam):
             break
     
     # Process and draw rectangles on the left and right halves
-    process_and_draw(cam_left, origin_x=0)            # Process left half
+    process_and_draw(cam_left, origin_x=1)            # Process left half
     process_and_draw(cam_right, origin_x=midline)     # Process right half
     
     # Convert numpy array back to PIL image and return
